@@ -71,6 +71,21 @@
 			<artifactId>gson</artifactId>
 			<version>2.2.4</version>
 		</dependency>
+		<dependency>
+			<groupId>org.eclipse.persistence</groupId>
+			<artifactId>org.eclipse.persistence.jpa</artifactId>
+			<version>2.5.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.persistence</groupId>
+			<artifactId>org.eclipse.persistence.nosql</artifactId>
+			<version>2.5.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.mongodb</groupId>
+			<artifactId>mongo-java-driver</artifactId>
+			<version>2.11.3</version>
+		</dependency>
 	</dependencies>
 
 	<repositories>
@@ -112,7 +127,7 @@
 				<configuration>
 					<archive>
 						<manifest>
-							<addClasspath>false</addClasspath>							
+							<addClasspath>false</addClasspath>
 						</manifest>
 					</archive>
 				</configuration>
