@@ -140,8 +140,6 @@
 			<artifactId>spring-data-mongodb</artifactId>
 			<version>${spring.data.mongo.version}</version>
 		</dependency>
-
-
 	</dependencies>
 
 	<repositories>

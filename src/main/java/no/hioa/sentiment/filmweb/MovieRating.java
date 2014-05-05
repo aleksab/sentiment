@@ -1,33 +1,19 @@
 package no.hioa.sentiment.filmweb;
 
-import java.io.Serializable;
+import org.springframework.data.annotation.Id;
 
-import javax.persistence.Basic;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-
-import org.eclipse.persistence.nosql.annotations.DataFormatType;
-import org.eclipse.persistence.nosql.annotations.Field;
-import org.eclipse.persistence.nosql.annotations.NoSql;
-
-@Entity
-@NoSql(dataFormat = DataFormatType.MAPPED)
-public class MovieRating implements Serializable
+public class MovieRating
 {
 	@Id
-	@GeneratedValue
-	@Field(name = "_id")
 	private String id;
 
-	@Basic
 	private int rating;
 
 	public MovieRating()
 	{
 		super();
 	}
-	
+
 	public MovieRating(int rating)
 	{
 		super();

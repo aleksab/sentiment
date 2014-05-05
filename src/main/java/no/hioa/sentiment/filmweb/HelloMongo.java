@@ -9,13 +9,11 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class HelloMongo
 {
-
 	@Autowired
 	MongoOperations mongoOperations;
 
 	public void run()
 	{
-
 		if (mongoOperations.collectionExists(Movie.class))
 		{
 			mongoOperations.dropCollection(Movie.class);
@@ -35,5 +33,4 @@ public class HelloMongo
 		List<Movie> results = mongoOperations.findAll(Movie.class);
 		System.out.println("Results: " + results);
 	}
-
 }

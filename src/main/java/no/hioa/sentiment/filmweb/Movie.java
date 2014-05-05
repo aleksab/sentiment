@@ -1,42 +1,28 @@
 package no.hioa.sentiment.filmweb;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.Basic;
-import javax.persistence.ElementCollection;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-import org.eclipse.persistence.nosql.annotations.DataFormatType;
-import org.eclipse.persistence.nosql.annotations.Field;
-import org.eclipse.persistence.nosql.annotations.NoSql;
-
-@Entity
-@NoSql(dataFormat = DataFormatType.MAPPED)
-public class Movie implements Serializable
+@Document
+public class Movie
 {
 	@Id
-	@GeneratedValue
-	@Field(name = "_id")
 	private String id;
 
-	@Basic
 	private String rawReviewText;
 
-	@Basic
 	private String genere;
 
-	@ElementCollection
 	private List<MovieRating> orderLines = new ArrayList<MovieRating>();
 
 	public Movie()
 	{
 		super();
 	}
-	
+
 	public Movie(String rawReviewText, String genere)
 	{
 		super();

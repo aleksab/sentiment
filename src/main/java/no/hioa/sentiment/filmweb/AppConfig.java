@@ -9,12 +9,11 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 
 import com.mongodb.Mongo;
 
-
 @Configuration
 public class AppConfig {
 
 	public @Bean MongoOperations mongoTemplate(Mongo mongo) {
-		MongoTemplate mongoTemplate = new MongoTemplate(mongo, "test");
+		MongoTemplate mongoTemplate = new MongoTemplate(mongo, "filmweb");
 		return mongoTemplate;
 	}
 
