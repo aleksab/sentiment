@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 public class HelloMongo
 {
 	@Autowired
-	MongoOperations mongoOperations;
+	MongoOperations	mongoOperations;
 
 	public void run()
 	{
@@ -26,10 +26,10 @@ public class HelloMongo
 		MovieRating r2 = new MovieRating(3);
 		movie.getOrderLines().add(r1);
 		movie.getOrderLines().add(r2);
-		
+
 		mongoOperations.insert(movie);
 		System.out.println("Uid: " + movie.getId());
-		
+
 		List<Movie> results = mongoOperations.findAll(Movie.class);
 		System.out.println("Results: " + results);
 	}

@@ -10,24 +10,24 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class Movie
 {
 	@Id
-	private String id;
+	private String				id;
 
-	private String rawReviewText;
+	private String				title;
 
-	private String genere;
+	private String				originalTitle;
 
-	private List<MovieRating> orderLines = new ArrayList<MovieRating>();
+	private List<MovieRating>	ratings	= new ArrayList<MovieRating>();
 
 	public Movie()
 	{
 		super();
 	}
 
-	public Movie(String rawReviewText, String genere)
+	public Movie(String title, String originalTitle)
 	{
 		super();
-		this.rawReviewText = rawReviewText;
-		this.genere = genere;
+		this.title = title;
+		this.originalTitle = originalTitle;
 	}
 
 	public String getId()
@@ -40,33 +40,33 @@ public class Movie
 		this.id = id;
 	}
 
-	public String getRawReviewText()
+	public String getTitle()
 	{
-		return rawReviewText;
+		return title;
 	}
 
-	public void setRawReviewText(String rawReviewText)
+	public void setTitle(String title)
 	{
-		this.rawReviewText = rawReviewText;
+		this.title = title;
 	}
 
-	public String getGenere()
+	public String getOriginalTitle()
 	{
-		return genere;
+		return originalTitle;
 	}
 
-	public void setGenere(String genere)
+	public void setOriginalTitle(String originalTitle)
 	{
-		this.genere = genere;
+		this.originalTitle = originalTitle;
 	}
 
-	public List<MovieRating> getOrderLines()
+	public List<MovieRating> getRatings()
 	{
-		return orderLines;
+		return ratings;
 	}
 
-	public void setOrderLines(List<MovieRating> orderLines)
+	public void setRatings(List<MovieRating> ratings)
 	{
-		this.orderLines = orderLines;
+		this.ratings = ratings;
 	}
 }
