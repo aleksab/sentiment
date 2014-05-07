@@ -28,8 +28,9 @@ public class FilmwebData
 		PropertyConfigurator.configure("log4j.properties");
 
 		ConfigurableApplicationContext context = new ClassPathXmlApplicationContext("META-INF/spring/bootstrap.xml");
-		FilmwebData hello = context.getBean(FilmwebData.class);
-		hello.insertXmlIntoMongo(new File("C:/Development/workspace juno/Hioa - Crawler/target/result.xml"));
+		FilmwebData data = context.getBean(FilmwebData.class);
+		// data.insertXmlIntoMongo(new File("C:/Development/workspace juno/Hioa - Crawler/target/result.xml"));
+		data.printStats();
 	}
 
 	public void insertXmlIntoMongo(File xmlFile)
@@ -64,5 +65,16 @@ public class FilmwebData
 
 		List<Movie> result = mongoOperations.findAll(Movie.class);
 		consoleLogger.info("Number of movies inserted into mongodb: {}", result.size());
+	}
+
+	public void printStats()
+	{
+		List<Movie> movies = mongoOperations.findAll(Movie.class);
+		consoleLogger.info("Number of movies in mongodb: {}", movies.size());
+
+		long reviews = 0;
+		for (Movie movie : movies)
+			reviews += movie.getReviews().size();
+		consoleLogger.info("Number of reviews in mongodb: {}", reviews);
 	}
 }
