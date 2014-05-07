@@ -10,9 +10,12 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import com.mongodb.Mongo;
 
 @Configuration
-public class AppConfig {
+public class SpringConfig
+{
 
-	public @Bean MongoOperations mongoTemplate(Mongo mongo) {
+	public @Bean
+	MongoOperations mongoTemplate(Mongo mongo)
+	{
 		MongoTemplate mongoTemplate = new MongoTemplate(mongo, "filmweb");
 		return mongoTemplate;
 	}
@@ -20,7 +23,9 @@ public class AppConfig {
 	/*
 	 * Factory bean that creates the Mongo instance
 	 */
-	public @Bean MongoFactoryBean mongo() {
+	public @Bean
+	MongoFactoryBean mongo()
+	{
 		MongoFactoryBean mongo = new MongoFactoryBean();
 		mongo.setHost("localhost");
 		return mongo;
@@ -29,8 +34,9 @@ public class AppConfig {
 	/*
 	 * Use this post processor to translate any MongoExceptions thrown in @Repository annotated classes
 	 */
-	public @Bean PersistenceExceptionTranslationPostProcessor persistenceExceptionTranslationPostProcessor() {
+	public @Bean
+	PersistenceExceptionTranslationPostProcessor persistenceExceptionTranslationPostProcessor()
+	{
 		return new PersistenceExceptionTranslationPostProcessor();
 	}
-
 }

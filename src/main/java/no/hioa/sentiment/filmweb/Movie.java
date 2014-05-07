@@ -1,7 +1,9 @@
 package no.hioa.sentiment.filmweb;
 
-import java.util.ArrayList;
 import java.util.List;
+
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlElementWrapper;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -11,12 +13,10 @@ public class Movie
 {
 	@Id
 	private String				id;
-
+	private String				link;
 	private String				title;
-
 	private String				originalTitle;
-
-	private List<MovieRating>	ratings	= new ArrayList<MovieRating>();
+	private List<ReviewContent>	reviews;
 
 	public Movie()
 	{
@@ -40,6 +40,16 @@ public class Movie
 		this.id = id;
 	}
 
+	public String getLink()
+	{
+		return link;
+	}
+
+	public void setLink(String link)
+	{
+		this.link = link;
+	}
+
 	public String getTitle()
 	{
 		return title;
@@ -60,13 +70,15 @@ public class Movie
 		this.originalTitle = originalTitle;
 	}
 
-	public List<MovieRating> getRatings()
+	@XmlElement(name = "review")
+	@XmlElementWrapper(name = "reviews")
+	public List<ReviewContent> getReviews()
 	{
-		return ratings;
+		return reviews;
 	}
 
-	public void setRatings(List<MovieRating> ratings)
+	public void setReviews(List<ReviewContent> reviews)
 	{
-		this.ratings = ratings;
+		this.reviews = reviews;
 	}
 }
