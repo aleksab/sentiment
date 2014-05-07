@@ -52,31 +52,56 @@ public class FilmwebPmiTest
 		BigDecimal result = pmi.calculatePmi("bra", "super");
 		Assert.assertEquals(new BigDecimal("0.2764729").floatValue(), result.floatValue(), 0);
 	}
-	
+
 	@Test
 	public void testCalculatePmi2() throws Exception
 	{
 		BigDecimal result = pmi.calculatePmi("glimrende", "nydelig");
 		Assert.assertEquals(new BigDecimal("0.2764729").floatValue(), result.floatValue(), 0);
 	}
-	
+
+	@Test
+	public void testCalculateNearPmi() throws Exception
+	{
+		BigDecimal result = pmi.calculateNearPmi("bra", "super", 10);
+		Assert.assertEquals(new BigDecimal("-3.2863042").floatValue(), result.floatValue(), 0);
+	}
+
 	@Test
 	public void testCalculateSoPmi() throws Exception
 	{
 		List<String> pWords = pmi.getPositiveWords();
 		List<String> nWords = pmi.getNegativeWords();
-		
-		BigDecimal result = pmi.calculateSoPmi("fantastisk", pWords, nWords);
+
+		BigDecimal result = pmi.calculateSoPmi("fantastisk", pWords, nWords, -1);
 		Assert.assertEquals(new BigDecimal("0.2764729").floatValue(), result.floatValue(), 0);
 	}
-	
+
 	@Test
 	public void testCalculateSoPmi2() throws Exception
 	{
 		List<String> pWords = pmi.getPositiveWords();
 		List<String> nWords = pmi.getNegativeWords();
-		
-		BigDecimal result = pmi.calculateSoPmi("forferdelig", pWords, nWords);
+
+		BigDecimal result = pmi.calculateSoPmi("forferdelig", pWords, nWords, -1);
 		Assert.assertEquals(new BigDecimal("0.2764729").floatValue(), result.floatValue(), 0);
+	}
+
+	@Test
+	public void testIsWithinLimit() throws Exception
+	{
+		Assert.assertTrue(pmi.isWithinLimit("word1 word2 word3 word4 word5 word6 word7 word8 word9 word10", "word1", "word5", 4));
+	}
+
+	@Test
+	public void testIsWithinLimit2() throws Exception
+	{
+		Assert.assertFalse(pmi.isWithinLimit("word1 word2 word3 word4 word5 word6 word7 word8 word9 word10", "word1", "word5", 3));
+	}
+
+	@Test
+	public void testIsWithinLimit3() throws Exception
+	{
+		Assert.assertTrue(pmi.isWithinLimit("word1 word2 word3 word4 word5 word6 word7 word8 word9 word10", "word5", "word1", 4));
 	}
 }

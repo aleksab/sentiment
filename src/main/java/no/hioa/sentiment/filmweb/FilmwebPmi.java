@@ -43,11 +43,10 @@ public class FilmwebPmi implements PmiCalculator
 
 		ConfigurableApplicationContext context = new ClassPathXmlApplicationContext("META-INF/spring/bootstrap.xml");
 		FilmwebPmi pmi = context.getBean(FilmwebPmi.class);
-		// pmi.calculatePmi("bra", "super");
-		pmi.calculateCandidatePmi(new File("target/"));
+		pmi.calculateCandidatePmi(new File("target/"), "so-pmi-10.txt", 10);
 	}
 
-	public void calculateCandidatePmi(File outputDir)
+	public void calculateCandidatePmi(File outputDir, String filname, int limit)
 	{
 		List<String> candidates = getCandidateWords();
 		List<String> pWords = getPositiveWords();
@@ -56,13 +55,13 @@ public class FilmwebPmi implements PmiCalculator
 
 		for (String candidate : candidates)
 		{
-			consoleLogger.info("Calculating SO-PMI for candidate word {}", candidate);
-			soPmi.put(candidate, calculateSoPmi(candidate, pWords, nWords));
+			consoleLogger.info("Calculating SO-PMI for candidate word {} with limit {}", candidate, limit);
+			soPmi.put(candidate, calculateSoPmi(candidate, pWords, nWords, limit));
 		}
 
 		soPmi = MapUtil.sortByValue(soPmi);
 
-		Path newFile = Paths.get(outputDir.getAbsolutePath(), "so-pmi.txt");
+		Path newFile = Paths.get(outputDir.getAbsolutePath(), filname);
 		consoleLogger.info("Saving result to file " + newFile);
 		try (BufferedWriter writer = Files.newBufferedWriter(newFile, Charset.defaultCharset()))
 		{
@@ -79,6 +78,58 @@ public class FilmwebPmi implements PmiCalculator
 	}
 
 	@Override
+	public BigDecimal calculateNearPmi(String word1, String word2, int limit)
+	{
+		BigDecimal probabilityWord1 = BigDecimal.ZERO.setScale(5);
+		BigDecimal probabilityWord2 = BigDecimal.ZERO.setScale(5);
+		BigDecimal probabilityBoth = BigDecimal.ZERO.setScale(5);
+
+		List<Movie> movies = mongoOperations.findAll(Movie.class);
+		logger.info("There are {} movies to calculate pmi for word1 {} and word2 {}", movies.size(), word1, word2);
+
+		BigDecimal totalDocuments = BigDecimal.ZERO.setScale(5);
+		BigDecimal occurenceWord1 = BigDecimal.ZERO.setScale(5);
+		BigDecimal occurenceWord2 = BigDecimal.ZERO.setScale(5);
+		BigDecimal occurenceNear = BigDecimal.ZERO.setScale(5);
+		for (Movie movie : movies)
+		{
+			for (ReviewContent review : movie.getReviews())
+			{
+				totalDocuments = totalDocuments.add(BigDecimal.ONE);
+
+				if (StringUtils.contains(review.getContent(), word1))
+					occurenceWord1 = occurenceWord1.add(BigDecimal.ONE);
+				if (StringUtils.contains(review.getContent(), word2))
+					occurenceWord2 = occurenceWord2.add(BigDecimal.ONE);
+
+				if (StringUtils.contains(review.getContent(), word1) && StringUtils.contains(review.getContent(), word2))
+				{
+					if (isWithinLimit(review.getContent(), word1, word2, limit))
+						occurenceNear = occurenceNear.add(BigDecimal.ONE);
+				}
+			}
+		}
+
+		logger.info("Total documents {}", totalDocuments);
+		logger.info("Occurence of word1 ({}) {}", word1, occurenceWord1);
+		logger.info("Occurence of word2 ({}) {}", word2, occurenceWord2);
+		logger.info("Occurence of both words with limit ({}) {}", limit, occurenceNear);
+
+		probabilityWord1 = occurenceWord1.divide(totalDocuments, RoundingMode.CEILING);
+		probabilityWord2 = occurenceWord2.divide(totalDocuments, RoundingMode.CEILING);
+		probabilityBoth = occurenceNear.divide(totalDocuments, RoundingMode.CEILING);
+
+		logger.info("Probability of word1 ({}) {}", word1, probabilityWord1);
+		logger.info("Probability of word2 ({}) {}", word2, probabilityWord2);
+		logger.info("Probability of both words {}", probabilityBoth);
+
+		BigDecimal pmi = calculateBasePmi(probabilityBoth, probabilityWord1, probabilityWord2);
+		logger.info("PMI for {} and {} within limit {} is {}", word1, word2, limit, pmi);
+
+		return pmi;
+	}
+
+	@Override
 	public BigDecimal calculatePmi(String word1, String word2)
 	{
 		BigDecimal probabilityWord1 = BigDecimal.ZERO.setScale(5);
@@ -86,7 +137,7 @@ public class FilmwebPmi implements PmiCalculator
 		BigDecimal probabilityBoth = BigDecimal.ZERO.setScale(5);
 
 		List<Movie> movies = mongoOperations.findAll(Movie.class);
-		consoleLogger.info("There are {} movies to calculate pmi for word1 {} and word2 {}", movies.size(), word1, word2);
+		logger.info("There are {} movies to calculate pmi for word1 {} and word2 {}", movies.size(), word1, word2);
 
 		BigDecimal totalDocuments = BigDecimal.ZERO.setScale(5);
 		BigDecimal occurenceWord1 = BigDecimal.ZERO.setScale(5);
@@ -108,46 +159,51 @@ public class FilmwebPmi implements PmiCalculator
 			}
 		}
 
-		consoleLogger.info("Total documents {}", totalDocuments);
-		consoleLogger.info("Occurence of word1 ({}) {}", word1, occurenceWord1);
-		consoleLogger.info("Occurence of word2 ({}) {}", word2, occurenceWord2);
-		consoleLogger.info("Occurence of both words {}", occurenceBoth);
+		logger.info("Total documents {}", totalDocuments);
+		logger.info("Occurence of word1 ({}) {}", word1, occurenceWord1);
+		logger.info("Occurence of word2 ({}) {}", word2, occurenceWord2);
+		logger.info("Occurence of both words {}", occurenceBoth);
 
 		probabilityWord1 = occurenceWord1.divide(totalDocuments, RoundingMode.CEILING);
 		probabilityWord2 = occurenceWord2.divide(totalDocuments, RoundingMode.CEILING);
 		probabilityBoth = occurenceBoth.divide(totalDocuments, RoundingMode.CEILING);
 
-		consoleLogger.info("Probability of word1 ({}) {}", word1, probabilityWord1);
-		consoleLogger.info("Probability of word2 ({}) {}", word2, probabilityWord2);
-		consoleLogger.info("Probability of both words {}", probabilityBoth);
+		logger.info("Probability of word1 ({}) {}", word1, probabilityWord1);
+		logger.info("Probability of word2 ({}) {}", word2, probabilityWord2);
+		logger.info("Probability of both words {}", probabilityBoth);
 
 		BigDecimal pmi = calculateBasePmi(probabilityBoth, probabilityWord1, probabilityWord2);
-		consoleLogger.info("PMI for {} and {} is {}", word1, word2, pmi);
+		logger.info("PMI for {} and {} is {}", word1, word2, pmi);
 
 		return pmi;
 	}
 
-	@Override
-	public BigDecimal calculateSoPmi(String word, List<String> pWords, List<String> nWords)
+	public BigDecimal calculateSoPmi(String word, List<String> pWords, List<String> nWords, int limit)
 	{
 		BigDecimal totalPositive = BigDecimal.ZERO.setScale(5);
 		BigDecimal totalNegative = BigDecimal.ZERO.setScale(5);
 
 		for (String positive : pWords)
 		{
-			totalPositive = totalPositive.add(calculatePmi(word, positive));
+			if (limit <= 0)
+				totalPositive = totalPositive.add(calculatePmi(word, positive));
+			else
+				totalPositive = totalPositive.add(calculateNearPmi(word, positive, limit));
 		}
 
 		for (String negative : nWords)
 		{
-			totalNegative = totalNegative.add(calculatePmi(word, negative));
+			if (limit <= 0)
+				totalNegative = totalNegative.add(calculatePmi(word, negative));
+			else
+				totalNegative = totalNegative.add(calculateNearPmi(word, negative, limit));
 		}
 
-		consoleLogger.info("Total positive for word {} is {}", word, totalPositive);
-		consoleLogger.info("Total negative for word {} is {}", word, totalNegative);
+		logger.info("Total positive for word {} is {}", word, totalPositive);
+		logger.info("Total negative for word {} is {}", word, totalNegative);
 
 		BigDecimal soPmi = totalPositive.subtract(totalNegative).setScale(5, RoundingMode.CEILING);
-		consoleLogger.info("Total SO-PMI for word {} is {}", word, soPmi);
+		consoleLogger.info("Total SO-PMI for word {} is {} with limit {}", word, soPmi, limit);
 
 		return soPmi;
 	}
@@ -173,6 +229,30 @@ public class FilmwebPmi implements PmiCalculator
 
 		// TODO: this is not ideal and we might lose precision
 		return new BigDecimal(Math.log(result.floatValue()) / Math.log(2));
+	}
+
+	boolean isWithinLimit(String content, String word1, String word2, int limit)
+	{
+		String[] words = content.split(" ");
+
+		int word1position = -1;
+		int word2position = -1;
+		for (int i = 0; i < words.length; i++)
+		{
+			if (words[i].contains(word1))
+				word1position = i;
+
+			if (words[i].contains(word2))
+				word2position = i;
+
+			if (word1position != -1 && word2position != -1)
+			{
+				if (Math.abs(word1position - word2position) <= limit)
+					return true;
+			}
+		}
+
+		return false;
 	}
 
 	List<String> getCandidateWords()
