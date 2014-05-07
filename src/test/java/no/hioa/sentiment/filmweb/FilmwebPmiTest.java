@@ -49,21 +49,21 @@ public class FilmwebPmiTest
 	@Test
 	public void testCalculatePmi() throws Exception
 	{
-		BigDecimal result = pmi.calculatePmi("bra", "super");
+		BigDecimal result = pmi.calculatePmi("bra", "super", -1);
 		Assert.assertEquals(new BigDecimal("0.2764729").floatValue(), result.floatValue(), 0);
 	}
 
 	@Test
 	public void testCalculatePmi2() throws Exception
 	{
-		BigDecimal result = pmi.calculatePmi("glimrende", "nydelig");
+		BigDecimal result = pmi.calculatePmi("glimrende", "nydelig", -1);
 		Assert.assertEquals(new BigDecimal("0.2764729").floatValue(), result.floatValue(), 0);
 	}
 
 	@Test
 	public void testCalculateNearPmi() throws Exception
 	{
-		BigDecimal result = pmi.calculateNearPmi("bra", "super", 10);
+		BigDecimal result = pmi.calculatePmi("bra", "super", 10);
 		Assert.assertEquals(new BigDecimal("-3.2863042").floatValue(), result.floatValue(), 0);
 	}
 

@@ -15,6 +15,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.StringTokenizer;
 
 import no.hioa.sentiment.service.PmiCalculator;
 
@@ -77,107 +78,6 @@ public class FilmwebPmi implements PmiCalculator
 		}
 	}
 
-	@Override
-	public BigDecimal calculateNearPmi(String word1, String word2, int limit)
-	{
-		BigDecimal probabilityWord1 = BigDecimal.ZERO.setScale(5);
-		BigDecimal probabilityWord2 = BigDecimal.ZERO.setScale(5);
-		BigDecimal probabilityBoth = BigDecimal.ZERO.setScale(5);
-
-		List<Movie> movies = mongoOperations.findAll(Movie.class);
-		logger.info("There are {} movies to calculate pmi for word1 {} and word2 {}", movies.size(), word1, word2);
-
-		BigDecimal totalDocuments = BigDecimal.ZERO.setScale(5);
-		BigDecimal occurenceWord1 = BigDecimal.ZERO.setScale(5);
-		BigDecimal occurenceWord2 = BigDecimal.ZERO.setScale(5);
-		BigDecimal occurenceNear = BigDecimal.ZERO.setScale(5);
-		for (Movie movie : movies)
-		{
-			for (ReviewContent review : movie.getReviews())
-			{
-				totalDocuments = totalDocuments.add(BigDecimal.ONE);
-
-				if (StringUtils.contains(review.getContent(), word1))
-					occurenceWord1 = occurenceWord1.add(BigDecimal.ONE);
-				if (StringUtils.contains(review.getContent(), word2))
-					occurenceWord2 = occurenceWord2.add(BigDecimal.ONE);
-
-				if (StringUtils.contains(review.getContent(), word1) && StringUtils.contains(review.getContent(), word2))
-				{
-					if (isWithinLimit(review.getContent(), word1, word2, limit))
-						occurenceNear = occurenceNear.add(BigDecimal.ONE);
-				}
-			}
-		}
-
-		logger.info("Total documents {}", totalDocuments);
-		logger.info("Occurence of word1 ({}) {}", word1, occurenceWord1);
-		logger.info("Occurence of word2 ({}) {}", word2, occurenceWord2);
-		logger.info("Occurence of both words with limit ({}) {}", limit, occurenceNear);
-
-		probabilityWord1 = occurenceWord1.divide(totalDocuments, RoundingMode.CEILING);
-		probabilityWord2 = occurenceWord2.divide(totalDocuments, RoundingMode.CEILING);
-		probabilityBoth = occurenceNear.divide(totalDocuments, RoundingMode.CEILING);
-
-		logger.info("Probability of word1 ({}) {}", word1, probabilityWord1);
-		logger.info("Probability of word2 ({}) {}", word2, probabilityWord2);
-		logger.info("Probability of both words {}", probabilityBoth);
-
-		BigDecimal pmi = calculateBasePmi(probabilityBoth, probabilityWord1, probabilityWord2);
-		logger.info("PMI for {} and {} within limit {} is {}", word1, word2, limit, pmi);
-
-		return pmi;
-	}
-
-	@Override
-	public BigDecimal calculatePmi(String word1, String word2)
-	{
-		BigDecimal probabilityWord1 = BigDecimal.ZERO.setScale(5);
-		BigDecimal probabilityWord2 = BigDecimal.ZERO.setScale(5);
-		BigDecimal probabilityBoth = BigDecimal.ZERO.setScale(5);
-
-		List<Movie> movies = mongoOperations.findAll(Movie.class);
-		logger.info("There are {} movies to calculate pmi for word1 {} and word2 {}", movies.size(), word1, word2);
-
-		BigDecimal totalDocuments = BigDecimal.ZERO.setScale(5);
-		BigDecimal occurenceWord1 = BigDecimal.ZERO.setScale(5);
-		BigDecimal occurenceWord2 = BigDecimal.ZERO.setScale(5);
-		BigDecimal occurenceBoth = BigDecimal.ZERO.setScale(5);
-		for (Movie movie : movies)
-		{
-			for (ReviewContent review : movie.getReviews())
-			{
-				totalDocuments = totalDocuments.add(BigDecimal.ONE);
-
-				if (StringUtils.contains(review.getContent(), word1))
-					occurenceWord1 = occurenceWord1.add(BigDecimal.ONE);
-				if (StringUtils.contains(review.getContent(), word2))
-					occurenceWord2 = occurenceWord2.add(BigDecimal.ONE);
-
-				if (StringUtils.contains(review.getContent(), word1) && StringUtils.contains(review.getContent(), word2))
-					occurenceBoth = occurenceBoth.add(BigDecimal.ONE);
-			}
-		}
-
-		logger.info("Total documents {}", totalDocuments);
-		logger.info("Occurence of word1 ({}) {}", word1, occurenceWord1);
-		logger.info("Occurence of word2 ({}) {}", word2, occurenceWord2);
-		logger.info("Occurence of both words {}", occurenceBoth);
-
-		probabilityWord1 = occurenceWord1.divide(totalDocuments, RoundingMode.CEILING);
-		probabilityWord2 = occurenceWord2.divide(totalDocuments, RoundingMode.CEILING);
-		probabilityBoth = occurenceBoth.divide(totalDocuments, RoundingMode.CEILING);
-
-		logger.info("Probability of word1 ({}) {}", word1, probabilityWord1);
-		logger.info("Probability of word2 ({}) {}", word2, probabilityWord2);
-		logger.info("Probability of both words {}", probabilityBoth);
-
-		BigDecimal pmi = calculateBasePmi(probabilityBoth, probabilityWord1, probabilityWord2);
-		logger.info("PMI for {} and {} is {}", word1, word2, pmi);
-
-		return pmi;
-	}
-
 	public BigDecimal calculateSoPmi(String word, List<String> pWords, List<String> nWords, int limit)
 	{
 		BigDecimal totalPositive = BigDecimal.ZERO.setScale(5);
@@ -185,18 +85,12 @@ public class FilmwebPmi implements PmiCalculator
 
 		for (String positive : pWords)
 		{
-			if (limit <= 0)
-				totalPositive = totalPositive.add(calculatePmi(word, positive));
-			else
-				totalPositive = totalPositive.add(calculateNearPmi(word, positive, limit));
+			totalPositive = totalPositive.add(calculatePmi(word, positive, limit));
 		}
 
 		for (String negative : nWords)
 		{
-			if (limit <= 0)
-				totalNegative = totalNegative.add(calculatePmi(word, negative));
-			else
-				totalNegative = totalNegative.add(calculateNearPmi(word, negative, limit));
+			totalNegative = totalNegative.add(calculatePmi(word, negative, limit));
 		}
 
 		logger.info("Total positive for word {} is {}", word, totalPositive);
@@ -208,18 +102,56 @@ public class FilmwebPmi implements PmiCalculator
 		return soPmi;
 	}
 
+	@Override
+	public BigDecimal calculatePmi(String word1, String word2, int limit)
+	{
+		List<Movie> movies = mongoOperations.findAll(Movie.class);
+		logger.info("There are {} movies to calculate pmi for word1 {} and word2 {} with limit {}", movies.size(), word1, word2, limit);
+
+		BigDecimal totalDocuments = BigDecimal.ZERO.setScale(5);
+		BigDecimal occurenceWord1 = BigDecimal.ZERO.setScale(5);
+		BigDecimal occurenceWord2 = BigDecimal.ZERO.setScale(5);
+		BigDecimal occurenceNear = BigDecimal.ZERO.setScale(5);
+
+		for (Movie movie : movies)
+		{
+			for (ReviewContent review : movie.getReviews())
+			{
+				totalDocuments = totalDocuments.add(BigDecimal.ONE);
+
+				if (StringUtils.contains(review.getContent(), word1))
+					occurenceWord1 = occurenceWord1.add(BigDecimal.ONE);
+				if (StringUtils.contains(review.getContent(), word2))
+					occurenceWord2 = occurenceWord2.add(BigDecimal.ONE);
+				if (isWithinLimit(review.getContent(), word1, word2, limit))
+					occurenceNear = occurenceNear.add(BigDecimal.ONE);
+			}
+		}
+
+		logger.info("Total documents {}", totalDocuments);
+		logger.info("Occurence of word1 ({}) {}", word1, occurenceWord1);
+		logger.info("Occurence of word2 ({}) {}", word2, occurenceWord2);
+		logger.info("Occurence of both words with limit ({}) {}", limit, occurenceNear);
+
+		BigDecimal probabilityWord1 = occurenceWord1.divide(totalDocuments, RoundingMode.CEILING);
+		BigDecimal probabilityWord2 = occurenceWord2.divide(totalDocuments, RoundingMode.CEILING);
+		BigDecimal probabilityBoth = occurenceNear.divide(totalDocuments, RoundingMode.CEILING);
+
+		logger.info("Probability of word1 ({}) {}", word1, probabilityWord1);
+		logger.info("Probability of word2 ({}) {}", word2, probabilityWord2);
+		logger.info("Probability of both words {}", probabilityBoth);
+
+		BigDecimal pmi = calculateBasePmi(probabilityBoth, probabilityWord1, probabilityWord2);
+		logger.info("PMI for {} and {} within limit {} is {}", word1, word2, limit, pmi);
+
+		return pmi;
+	}
+
 	BigDecimal calculateBasePmi(BigDecimal occurenceBoth, BigDecimal occurenceWord1, BigDecimal occurenceWord2)
 	{
 		occurenceBoth = occurenceBoth.setScale(5);
 		occurenceWord1 = occurenceWord1.setScale(5);
 		occurenceWord2 = occurenceWord2.setScale(5);
-
-		// if (occurenceBoth.compareTo(BigDecimal.ZERO) == 0)
-		// occurenceBoth = new BigDecimal("0.01");
-		// if (occurenceWord1.compareTo(BigDecimal.ZERO) == 0)
-		// occurenceWord1 = new BigDecimal("0.01");
-		// if (occurenceWord2.compareTo(BigDecimal.ZERO) == 0)
-		// occurenceWord2 = new BigDecimal("0.01");
 
 		// TODO: should we do this or use Laplace smoothing?
 		if (occurenceBoth.compareTo(BigDecimal.ZERO) == 0 || occurenceWord1.multiply(occurenceWord2).compareTo(BigDecimal.ZERO) == 0)
@@ -231,19 +163,38 @@ public class FilmwebPmi implements PmiCalculator
 		return new BigDecimal(Math.log(result.floatValue()) / Math.log(2));
 	}
 
+	/**
+	 * Check if two words are within a certain range of each other in a content.
+	 * 
+	 * @param content
+	 * @param word1
+	 * @param word2
+	 * @param limit
+	 * @return
+	 */
 	boolean isWithinLimit(String content, String word1, String word2, int limit)
 	{
-		String[] words = content.split(" ");
+		if (!content.contains(word1) || !content.contains(word2))
+			return false;
 
+		if (limit <= 0 || limit > content.length())
+			return true;
+
+		StringTokenizer words = new StringTokenizer(content);
 		int word1position = -1;
 		int word2position = -1;
-		for (int i = 0; i < words.length; i++)
-		{
-			if (words[i].contains(word1))
-				word1position = i;
+		int counter = 0;
 
-			if (words[i].contains(word2))
-				word2position = i;
+		while (words.hasMoreTokens())
+		{
+			counter++;
+			String word = words.nextToken();
+
+			if (word.contains(word1))
+				word1position = counter;
+
+			if (word.contains(word2))
+				word2position = counter;
 
 			if (word1position != -1 && word2position != -1)
 			{

@@ -8,6 +8,6 @@
 
 	<context:annotation-config />
 
-	<context:component-scan base-package="no.hioa.sentiment.filmweb" />
+	<context:component-scan base-package="no.hioa.sentiment.filmweb,no.hioa.sentiment.newsletter" />
 
 </beans>

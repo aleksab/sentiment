@@ -16,7 +16,7 @@ import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public class FilmwebData
+public class FilmwebImport
 {
 	private static final Logger	consoleLogger	= LoggerFactory.getLogger("stdoutLogger");
 
@@ -28,7 +28,7 @@ public class FilmwebData
 		PropertyConfigurator.configure("log4j.properties");
 
 		ConfigurableApplicationContext context = new ClassPathXmlApplicationContext("META-INF/spring/bootstrap.xml");
-		FilmwebData data = context.getBean(FilmwebData.class);
+		FilmwebImport data = context.getBean(FilmwebImport.class);
 		// data.insertXmlIntoMongo(new File("C:/Development/workspace juno/Hioa - Crawler/target/result.xml"));
 		data.printStats();
 	}

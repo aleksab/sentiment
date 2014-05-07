@@ -10,7 +10,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import com.mongodb.Mongo;
 
 @Configuration
-public class SpringConfig
+public class FilmwebConfig
 {
 
 	public @Bean
