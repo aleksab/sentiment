@@ -231,7 +231,6 @@ public class NewsletterImport
 				catch (Exception ex)
 				{
 					date = fmt.parse("00.01.01");
-					consoleLogger.warn("Could not parse date, defaulting to 01.01.2000");
 				}
 
 				StringBuffer content = new StringBuffer();
