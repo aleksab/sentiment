@@ -2,7 +2,8 @@ package no.hioa.sentiment.newsletter;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -157,7 +158,7 @@ public class NewsletterImport
 
 		try
 		{
-			reader = new BufferedReader(new FileReader(file));
+			reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), "ISO-8859"));
 			String line = reader.readLine();
 			while (line != null)
 			{
@@ -210,7 +211,7 @@ public class NewsletterImport
 
 		try
 		{
-			reader = new BufferedReader(new FileReader(file));
+			reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), "ISO-8859"));
 			String line = reader.readLine();
 			while (line != null)
 			{
@@ -221,7 +222,17 @@ public class NewsletterImport
 				String day = StringUtils.substringBefore(StringUtils.substringAfter(reader.readLine(), "##D ").trim(), ">");
 
 				SimpleDateFormat fmt = new SimpleDateFormat("yy.MM.dd");
-				Date date = fmt.parse(year + "." + month + "." + day);
+				Date date = null;
+
+				try
+				{
+					fmt.parse(year + "." + month + "." + day);
+				}
+				catch (Exception ex)
+				{
+					date = fmt.parse("00.01.01");
+					consoleLogger.warn("Could not parse date, defaulting to 01.01.2000");
+				}
 
 				StringBuffer content = new StringBuffer();
 				line = reader.readLine();
