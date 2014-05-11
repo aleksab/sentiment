@@ -14,28 +14,60 @@ import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.SimpleMongoDbFactory;
 
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
 import com.mongodb.MongoClient;
 
 public class FilmwebImport
 {
 	private static final Logger	consoleLogger	= LoggerFactory.getLogger("stdoutLogger");
 
-	MongoOperations				mongoOperations;
+	@Parameter(names = "-db", description = "Mongo database name")
+	private String				dbName			= "filmweb";
+
+	@Parameter(names = "-xml", description = "Path to xml file")
+	private String				xmlFile;
+
+	@Parameter(names = "-p", description = "Print statistics")
+	private boolean				printStats		= false;
+
+	private MongoOperations		mongoOperations;
 
 	public static void main(String[] args) throws UnknownHostException
 	{
 		PropertyConfigurator.configure("log4j.properties");
 
-		// new FilmwebImport().insertXmlIntoMongo(new File("C:/Development/workspace juno/Hioa - Crawler/target/result.xml"));
-		new FilmwebImport().printStats();
+		new FilmwebImport(args).printStats();
 	}
 
-	public FilmwebImport() throws UnknownHostException
+	public FilmwebImport(String[] args) throws UnknownHostException
 	{
-		mongoOperations = new MongoTemplate(new SimpleMongoDbFactory(new MongoClient(), "filmweb"));
+		JCommander commander = new JCommander(this, args);
+		mongoOperations = new MongoTemplate(new SimpleMongoDbFactory(new MongoClient(), dbName));
+
+		if (printStats)
+			printStats();
+		else if (xmlFile == null)
+			commander.usage();
+		else
+		{
+			long result = insertXmlIntoMongo(new File(xmlFile));
+			consoleLogger.info("{} movies have been imported", result);
+		}
 	}
 
-	public void insertXmlIntoMongo(File xmlFile)
+	public void printStats()
+	{
+		List<Movie> movies = mongoOperations.findAll(Movie.class);
+		consoleLogger.info("Number of movies in {} is {}", dbName, movies.size());
+
+		long reviews = 0;
+		for (Movie movie : movies)
+			reviews += movie.getReviews().size();
+		consoleLogger.info("Number of reviews in {} is {}", dbName, reviews);
+	}
+
+	public long insertXmlIntoMongo(File xmlFile)
 	{
 		MovieHeader movies = null;
 
@@ -57,7 +89,7 @@ public class FilmwebImport
 			mongoOperations.dropCollection(Movie.class);
 		}
 
-		// mongoOperations.createCollection(Movie.class);
+		mongoOperations.createCollection(Movie.class);
 
 		consoleLogger.info("Inserting movies into mongodb");
 		for (Movie movie : movies.getMovies())
@@ -65,18 +97,6 @@ public class FilmwebImport
 			mongoOperations.insert(movie);
 		}
 
-		List<Movie> result = mongoOperations.findAll(Movie.class);
-		consoleLogger.info("Number of movies inserted into mongodb: {}", result.size());
-	}
-
-	public void printStats()
-	{
-		List<Movie> movies = mongoOperations.findAll(Movie.class);
-		consoleLogger.info("Number of movies in mongodb: {}", movies.size());
-
-		long reviews = 0;
-		for (Movie movie : movies)
-			reviews += movie.getReviews().size();
-		consoleLogger.info("Number of reviews in mongodb: {}", reviews);
+		return movies.getMovies().size();
 	}
 }

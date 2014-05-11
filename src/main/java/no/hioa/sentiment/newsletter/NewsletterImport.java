@@ -27,7 +27,6 @@ import com.mongodb.MongoClient;
 @SuppressWarnings("deprecation")
 public class NewsletterImport
 {
-	private static final Logger	logger			= LoggerFactory.getLogger("fileLogger");
 	private static final Logger	consoleLogger	= LoggerFactory.getLogger("stdoutLogger");
 
 	@Parameter(names = "-db", description = "Mongo database name")
@@ -58,7 +57,7 @@ public class NewsletterImport
 
 		if (printStats)
 			printStats();
-		else if (version1folder == null || version1folder == null)
+		else if (version1folder == null || version2folder == null)
 			commander.usage();
 		else
 		{
@@ -68,7 +67,7 @@ public class NewsletterImport
 			else
 				result = importAllArticlesVersion2(new File(version2folder));
 
-			consoleLogger.info("{} articles has been imported", result);
+			consoleLogger.info("{} articles have been imported", result);
 		}
 	}
 
@@ -136,7 +135,7 @@ public class NewsletterImport
 			{
 				if (file.getName().endsWith("html4"))
 				{
-					logger.info("Extracting articles from {}", file.getAbsolutePath());
+					consoleLogger.info("Extracting articles from {}", file.getAbsolutePath());
 					List<Article> articles = extractArticlesVersion2(file);
 					totalArticles += articles.size();
 
@@ -194,7 +193,7 @@ public class NewsletterImport
 		}
 		catch (Exception ex)
 		{
-			logger.error("Could not read content from file " + file.getAbsolutePath(), ex);
+			consoleLogger.error("Could not read content from file " + file.getAbsolutePath(), ex);
 		}
 		finally
 		{
@@ -237,7 +236,7 @@ public class NewsletterImport
 		}
 		catch (Exception ex)
 		{
-			logger.error("Could not read content from file " + file.getAbsolutePath(), ex);
+			consoleLogger.error("Could not read content from file " + file.getAbsolutePath(), ex);
 		}
 		finally
 		{
