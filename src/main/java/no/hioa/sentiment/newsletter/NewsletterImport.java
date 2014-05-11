@@ -3,6 +3,7 @@ package no.hioa.sentiment.newsletter;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
@@ -14,37 +15,77 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.data.mongodb.core.MongoOperations;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.SimpleMongoDbFactory;
+import org.springframework.data.mongodb.core.query.Query;
+
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.mongodb.MongoClient;
 
 @SuppressWarnings("deprecation")
-@Repository
 public class NewsletterImport
 {
 	private static final Logger	logger			= LoggerFactory.getLogger("fileLogger");
 	private static final Logger	consoleLogger	= LoggerFactory.getLogger("stdoutLogger");
 
-	@Autowired
-	MongoOperations				mongoOperations;
+	@Parameter(names = "-db", description = "Mongo database name")
+	private String				dbName			= "newspaper";
 
-	public static void main(String[] args)
+	@Parameter(names = "-v1path", description = "Path to folder of version 1 files")
+	private String				version1folder;
+
+	@Parameter(names = "-v2path", description = "Path to folder of version 2 files")
+	private String				version2folder;
+
+	@Parameter(names = "-p", description = "Print statistics")
+	private boolean				printStats		= false;
+
+	private MongoOperations		mongoOperations;
+
+	public static void main(String[] args) throws UnknownHostException
 	{
 		PropertyConfigurator.configure("log4j.properties");
 
-		ConfigurableApplicationContext context = new ClassPathXmlApplicationContext("META-INF/spring/bootstrap.xml");
-		NewsletterImport data = context.getBean(NewsletterImport.class);
-		// data.insertXmlIntoMongo(new File("C:/Development/workspace juno/Hioa - Crawler/target/result.xml"));
-		long articles = data.importAllArticlesVersion1(new File("E:/Data/norsk_aviskorpus/1/20030116-20050403/"));
+		new NewsletterImport(args);
+	}
 
-		// long articles = data.importAllArticles(new File("E:/Data/norsk_aviskorpus/2/"));
-		consoleLogger.info("Number of articles extracted {}", articles);
+	public NewsletterImport(String[] args) throws UnknownHostException
+	{
+		JCommander commander = new JCommander(this, args);
+		mongoOperations = new MongoTemplate(new SimpleMongoDbFactory(new MongoClient(), dbName));
+
+		if (printStats)
+			printStats();
+		else if (version1folder == null || version1folder == null)
+			commander.usage();
+		else
+		{
+			long result = 0;
+			if (version1folder != null)
+				result = importAllArticlesVersion1(new File(version1folder));
+			else
+				result = importAllArticlesVersion2(new File(version2folder));
+
+			consoleLogger.info("{} articles has been imported", result);
+		}
+	}
+
+	public void printStats()
+	{
+		long articles = mongoOperations.count(new Query(), Article.class);
+		consoleLogger.info("Number of articles in {} is {}", dbName, articles);
 	}
 
 	public long importAllArticlesVersion1(File folder)
 	{
+		if (!folder.exists())
+		{
+			consoleLogger.warn("Folder {} does not exists", folder);
+			return 0;
+		}
+
 		if (!mongoOperations.collectionExists(Article.class))
 		{
 			mongoOperations.createCollection(Article.class);
@@ -67,6 +108,12 @@ public class NewsletterImport
 
 	public long importAllArticlesVersion2(File folder)
 	{
+		if (!folder.exists())
+		{
+			consoleLogger.warn("Folder {} does not exists", folder);
+			return 0;
+		}
+
 		if (!mongoOperations.collectionExists(Article.class))
 		{
 			mongoOperations.createCollection(Article.class);

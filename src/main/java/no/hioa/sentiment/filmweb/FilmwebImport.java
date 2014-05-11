@@ -1,6 +1,7 @@
 package no.hioa.sentiment.filmweb;
 
 import java.io.File;
+import java.net.UnknownHostException;
 import java.util.List;
 
 import javax.xml.bind.JAXBContext;
@@ -9,28 +10,29 @@ import javax.xml.bind.Unmarshaller;
 import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.data.mongodb.core.MongoOperations;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.SimpleMongoDbFactory;
 
-@Repository
+import com.mongodb.MongoClient;
+
 public class FilmwebImport
 {
 	private static final Logger	consoleLogger	= LoggerFactory.getLogger("stdoutLogger");
 
-	@Autowired
 	MongoOperations				mongoOperations;
 
-	public static void main(String[] args)
+	public static void main(String[] args) throws UnknownHostException
 	{
 		PropertyConfigurator.configure("log4j.properties");
 
-		ConfigurableApplicationContext context = new ClassPathXmlApplicationContext("META-INF/spring/bootstrap.xml");
-		FilmwebImport data = context.getBean(FilmwebImport.class);
-		// data.insertXmlIntoMongo(new File("C:/Development/workspace juno/Hioa - Crawler/target/result.xml"));
-		data.printStats();
+		// new FilmwebImport().insertXmlIntoMongo(new File("C:/Development/workspace juno/Hioa - Crawler/target/result.xml"));
+		new FilmwebImport().printStats();
+	}
+
+	public FilmwebImport() throws UnknownHostException
+	{
+		mongoOperations = new MongoTemplate(new SimpleMongoDbFactory(new MongoClient(), "filmweb"));
 	}
 
 	public void insertXmlIntoMongo(File xmlFile)
@@ -55,7 +57,7 @@ public class FilmwebImport
 			mongoOperations.dropCollection(Movie.class);
 		}
 
-		mongoOperations.createCollection(Movie.class);
+		// mongoOperations.createCollection(Movie.class);
 
 		consoleLogger.info("Inserting movies into mongodb");
 		for (Movie movie : movies.getMovies())

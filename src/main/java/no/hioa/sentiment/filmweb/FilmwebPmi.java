@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,28 +24,29 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.data.mongodb.core.MongoOperations;
-import org.springframework.stereotype.Component;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.SimpleMongoDbFactory;
 
-@Component
+import com.mongodb.MongoClient;
+
 public class FilmwebPmi implements PmiCalculator
 {
 	private static final Logger	logger			= LoggerFactory.getLogger("fileLogger");
 	private static final Logger	consoleLogger	= LoggerFactory.getLogger("stdoutLogger");
 
-	@Autowired
 	MongoOperations				mongoOperations;
 
-	public static void main(String[] args)
+	public static void main(String[] args) throws UnknownHostException
 	{
 		PropertyConfigurator.configure("log4j.properties");
 
-		ConfigurableApplicationContext context = new ClassPathXmlApplicationContext("META-INF/spring/bootstrap.xml");
-		FilmwebPmi pmi = context.getBean(FilmwebPmi.class);
-		pmi.calculateCandidatePmi(new File("target/"), "so-pmi-10.txt", 10);
+		new FilmwebPmi().calculateCandidatePmi(new File("target/"), "so-pmi-10.txt", 10);
+	}
+
+	public FilmwebPmi() throws UnknownHostException
+	{
+		mongoOperations = new MongoTemplate(new SimpleMongoDbFactory(new MongoClient(), "filmweb"));
 	}
 
 	public void calculateCandidatePmi(File outputDir, String filname, int limit)
