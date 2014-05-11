@@ -54,7 +54,7 @@ public class NewsletterImport
 	public NewsletterImport(String[] args) throws UnknownHostException
 	{
 		JCommander commander = new JCommander(this, args);
-		mongoOperations = new MongoTemplate(new SimpleMongoDbFactory(new MongoClient(), dbName));
+		mongoOperations = new MongoTemplate(new SimpleMongoDbFactory(new MongoClient("dev.prognett.no"), dbName));
 
 		if (printStats)
 			printStats();
@@ -76,6 +76,10 @@ public class NewsletterImport
 	{
 		long articles = mongoOperations.count(new Query(), Article.class);
 		consoleLogger.info("Number of articles in {} is {}", dbName, articles);
+		
+		List<Article> arts = mongoOperations.findAll(Article.class);
+		for (Article art : arts)
+			consoleLogger.info(art.getContent());
 	}
 
 	public long importAllArticlesVersion1(File folder)
@@ -185,7 +189,7 @@ public class NewsletterImport
 				line = reader.readLine();
 				while (line != null && !line.startsWith("<"))
 				{
-					content.append(StringUtils.substringBefore(line, "¶") + " ");
+					content.append(StringUtils.substringBefore(line, "¶").trim() + " ");
 					line = reader.readLine();
 				}
 
@@ -237,7 +241,7 @@ public class NewsletterImport
 				line = reader.readLine();
 				while (line != null && !line.startsWith("##"))
 				{
-					content.append(StringUtils.substringBefore(line, "¶") + " ");
+					content.append(StringUtils.substringBefore(line, "¶").trim() + " ");
 					line = reader.readLine();
 				}
 
