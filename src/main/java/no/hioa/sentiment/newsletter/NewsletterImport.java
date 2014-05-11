@@ -185,7 +185,7 @@ public class NewsletterImport
 				line = reader.readLine();
 				while (line != null && !line.startsWith("<"))
 				{
-					content.append(StringUtils.substringBefore(line, "¶"));
+					content.append(StringUtils.substringBefore(line, "¶") + " ");
 					line = reader.readLine();
 				}
 
@@ -237,10 +237,11 @@ public class NewsletterImport
 				line = reader.readLine();
 				while (line != null && !line.startsWith("##"))
 				{
-					content.append(StringUtils.substringBefore(line, "¶"));
+					content.append(StringUtils.substringBefore(line, "¶") + " ");
 					line = reader.readLine();
 				}
 
+				consoleLogger.info(content.toString());
 				articles.add(new Article(link, newspaper, date, content.toString()));
 			}
 		}
