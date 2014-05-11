@@ -76,7 +76,7 @@ public class NewsletterImport
 	{
 		long articles = mongoOperations.count(new Query(), Article.class);
 		consoleLogger.info("Number of articles in {} is {}", dbName, articles);
-		
+
 		List<Article> arts = mongoOperations.findAll(Article.class);
 		for (Article art : arts)
 			consoleLogger.info(art.getContent());
@@ -245,7 +245,6 @@ public class NewsletterImport
 					line = reader.readLine();
 				}
 
-				consoleLogger.info(content.toString());
 				articles.add(new Article(link, newspaper, date, content.toString()));
 			}
 		}
