@@ -158,7 +158,7 @@ public class NewsletterImport
 
 		try
 		{
-			reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), "ISO-8859"));
+			reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), "ISO-8859-1"));
 			String line = reader.readLine();
 			while (line != null)
 			{
@@ -211,7 +211,7 @@ public class NewsletterImport
 
 		try
 		{
-			reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), "ISO-8859"));
+			reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), "ISO-8859-1"));
 			String line = reader.readLine();
 			while (line != null)
 			{
