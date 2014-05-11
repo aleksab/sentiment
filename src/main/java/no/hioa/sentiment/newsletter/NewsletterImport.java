@@ -57,7 +57,7 @@ public class NewsletterImport
 
 		if (printStats)
 			printStats();
-		else if (version1folder == null || version2folder == null)
+		else if (version1folder == null && version2folder == null)
 			commander.usage();
 		else
 		{
