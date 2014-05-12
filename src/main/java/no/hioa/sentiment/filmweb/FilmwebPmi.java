@@ -32,10 +32,10 @@ import com.mongodb.MongoClient;
 
 public class FilmwebPmi implements PmiCalculator
 {
-	private static final Logger	logger			= LoggerFactory.getLogger("fileLogger");
-	private static final Logger	consoleLogger	= LoggerFactory.getLogger("stdoutLogger");
+	private static final Logger logger = LoggerFactory.getLogger("fileLogger");
+	private static final Logger consoleLogger = LoggerFactory.getLogger("stdoutLogger");
 
-	MongoOperations				mongoOperations;
+	MongoOperations mongoOperations;
 
 	public static void main(String[] args) throws UnknownHostException
 	{
@@ -73,8 +73,7 @@ public class FilmwebPmi implements PmiCalculator
 				writer.append("Word " + word + " has SO-PMI of " + soPmi.get(word) + "\n");
 				consoleLogger.info("Word {} has SO-PMI of {}", word, soPmi.get(word));
 			}
-		}
-		catch (IOException ex)
+		} catch (IOException ex)
 		{
 			logger.error("Could not save SO-PMI to file " + newFile, ex);
 		}
@@ -107,27 +106,24 @@ public class FilmwebPmi implements PmiCalculator
 	@Override
 	public BigDecimal calculatePmi(String word1, String word2, int limit)
 	{
-		List<Movie> movies = mongoOperations.findAll(Movie.class);
-		logger.info("There are {} movies to calculate pmi for word1 {} and word2 {} with limit {}", movies.size(), word1, word2, limit);
+		List<Review> reviews = mongoOperations.findAll(Review.class);
+		logger.info("There are {} reviews to calculate pmi for word1 {} and word2 {} with limit {}", reviews.size(), word1, word2, limit);
 
 		BigDecimal totalDocuments = BigDecimal.ZERO.setScale(5);
 		BigDecimal occurenceWord1 = BigDecimal.ZERO.setScale(5);
 		BigDecimal occurenceWord2 = BigDecimal.ZERO.setScale(5);
 		BigDecimal occurenceNear = BigDecimal.ZERO.setScale(5);
 
-		for (Movie movie : movies)
+		for (Review review : reviews)
 		{
-			// for (ReviewContent review : movie.getReviews())
-			// {
-			// totalDocuments = totalDocuments.add(BigDecimal.ONE);
-			//
-			// if (StringUtils.contains(review.getContent(), word1))
-			// occurenceWord1 = occurenceWord1.add(BigDecimal.ONE);
-			// if (StringUtils.contains(review.getContent(), word2))
-			// occurenceWord2 = occurenceWord2.add(BigDecimal.ONE);
-			// if (isWithinLimit(review.getContent(), word1, word2, limit))
-			// occurenceNear = occurenceNear.add(BigDecimal.ONE);
-			// }
+			totalDocuments = totalDocuments.add(BigDecimal.ONE);
+
+			if (StringUtils.contains(review.getContent(), word1))
+				occurenceWord1 = occurenceWord1.add(BigDecimal.ONE);
+			if (StringUtils.contains(review.getContent(), word2))
+				occurenceWord2 = occurenceWord2.add(BigDecimal.ONE);
+			if (isWithinLimit(review.getContent(), word1, word2, limit))
+				occurenceNear = occurenceNear.add(BigDecimal.ONE);
 		}
 
 		logger.info("Total documents {}", totalDocuments);
@@ -234,8 +230,7 @@ public class FilmwebPmi implements PmiCalculator
 				String input = scanner.nextLine().toLowerCase();
 				words.add(input);
 			}
-		}
-		catch (Exception ex)
+		} catch (Exception ex)
 		{
 			logger.error("Could not read content for file " + file.getAbsolutePath(), ex);
 		}
