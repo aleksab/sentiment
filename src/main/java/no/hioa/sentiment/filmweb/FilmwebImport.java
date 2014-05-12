@@ -2,6 +2,7 @@ package no.hioa.sentiment.filmweb;
 
 import java.io.File;
 import java.net.UnknownHostException;
+import java.util.LinkedList;
 import java.util.List;
 
 import javax.xml.bind.JAXBContext;
@@ -13,10 +14,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.SimpleMongoDbFactory;
+import org.springframework.data.mongodb.core.query.BasicQuery;
+import org.springframework.data.mongodb.core.query.Query;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoCredential;
+import com.mongodb.ServerAddress;
 
 public class FilmwebImport
 {
@@ -31,6 +36,18 @@ public class FilmwebImport
 	@Parameter(names = "-p", description = "Print statistics")
 	private boolean printStats = false;
 
+	@Parameter(names = "-host", description = "Host to mongo server", required = true)
+	private String mongoHost;
+
+	@Parameter(names = "-username", description = "Username of mongo user", required = true)
+	private String mongoUsername;
+
+	@Parameter(names = "-password", description = "Password for mongo user", required = true)
+	private String mongoPassword;
+
+	@Parameter(names = "-authdb", description = "Name of database where user is defined")
+	private String mongoAuthDb = "admin";
+
 	private MongoOperations mongoOperations;
 
 	public static void main(String[] args) throws UnknownHostException
@@ -43,7 +60,10 @@ public class FilmwebImport
 	public FilmwebImport(String[] args) throws UnknownHostException
 	{
 		JCommander commander = new JCommander(this, args);
-		mongoOperations = new MongoTemplate(new SimpleMongoDbFactory(new MongoClient(), dbName));
+		List<MongoCredential> credentialsList = new LinkedList<>();
+		credentialsList.add(MongoCredential.createMongoCRCredential(mongoUsername, mongoAuthDb, mongoPassword.toCharArray()));
+		MongoClient client = new MongoClient(new ServerAddress(mongoHost), credentialsList);
+		mongoOperations = new MongoTemplate(new SimpleMongoDbFactory(client, dbName));
 
 		if (printStats)
 			printStats();
@@ -58,11 +78,15 @@ public class FilmwebImport
 
 	public void printStats()
 	{
-		List<Movie> movies = mongoOperations.findAll(Movie.class);
-		consoleLogger.info("Number of movies in {} is {}", dbName, movies.size());
+		long movies = mongoOperations.count(new Query(), Movie.class);
+		consoleLogger.info("Number of movies in {} is {}", dbName, movies);
 
-		List<Review> reviews = mongoOperations.findAll(Review.class);
-		consoleLogger.info("Number of reviews in {} is {}", dbName, reviews.size());
+		long reviews = mongoOperations.count(new Query(), Review.class);
+		consoleLogger.info("Number of reviews in {} is {}", dbName, reviews);
+
+		BasicQuery query = new BasicQuery("{ rating : 6 }");
+		Review review = mongoOperations.findOne(query, Review.class);
+		consoleLogger.info(review.getRating() + " - " + review.getContent());
 	}
 
 	public long insertXmlIntoMongo(File xmlFile)
