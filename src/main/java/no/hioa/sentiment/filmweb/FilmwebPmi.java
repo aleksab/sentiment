@@ -117,17 +117,17 @@ public class FilmwebPmi implements PmiCalculator
 
 		for (Movie movie : movies)
 		{
-			for (ReviewContent review : movie.getReviews())
-			{
-				totalDocuments = totalDocuments.add(BigDecimal.ONE);
-
-				if (StringUtils.contains(review.getContent(), word1))
-					occurenceWord1 = occurenceWord1.add(BigDecimal.ONE);
-				if (StringUtils.contains(review.getContent(), word2))
-					occurenceWord2 = occurenceWord2.add(BigDecimal.ONE);
-				if (isWithinLimit(review.getContent(), word1, word2, limit))
-					occurenceNear = occurenceNear.add(BigDecimal.ONE);
-			}
+			// for (ReviewContent review : movie.getReviews())
+			// {
+			// totalDocuments = totalDocuments.add(BigDecimal.ONE);
+			//
+			// if (StringUtils.contains(review.getContent(), word1))
+			// occurenceWord1 = occurenceWord1.add(BigDecimal.ONE);
+			// if (StringUtils.contains(review.getContent(), word2))
+			// occurenceWord2 = occurenceWord2.add(BigDecimal.ONE);
+			// if (isWithinLimit(review.getContent(), word1, word2, limit))
+			// occurenceNear = occurenceNear.add(BigDecimal.ONE);
+			// }
 		}
 
 		logger.info("Total documents {}", totalDocuments);

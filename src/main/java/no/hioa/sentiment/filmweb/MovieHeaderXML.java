@@ -6,28 +6,28 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement(name = "movies")
-public class MovieHeader
+public class MovieHeaderXML
 {
-	private List<Movie>	movies;
+	private List<MovieXML>	movies;
 
-	public MovieHeader()
+	public MovieHeaderXML()
 	{
 
 	}
 
-	public MovieHeader(List<Movie> movies)
+	public MovieHeaderXML(List<MovieXML> movies)
 	{
 		super();
 		this.movies = movies;
 	}
 
 	@XmlElement(name = "movie")
-	public List<Movie> getMovies()
+	public List<MovieXML> getMovies()
 	{
 		return movies;
 	}
 
-	public void setMovies(List<Movie> movies)
+	public void setMovies(List<MovieXML> movies)
 	{
 		this.movies = movies;
 	}

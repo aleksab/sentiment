@@ -1,10 +1,5 @@
 package no.hioa.sentiment.filmweb;
 
-import java.util.List;
-
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlElementWrapper;
-
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -15,17 +10,17 @@ public class Movie
 	private String				id;
 	private String				link;
 	private String				title;
-	private String				originalTitle;
-	private List<ReviewContent>	reviews;
+	private String				originalTitle;	
 
 	public Movie()
 	{
 		super();
 	}
 
-	public Movie(String title, String originalTitle)
+	public Movie(String link, String title, String originalTitle)
 	{
 		super();
+		this.link = link;
 		this.title = title;
 		this.originalTitle = originalTitle;
 	}
@@ -68,17 +63,5 @@ public class Movie
 	public void setOriginalTitle(String originalTitle)
 	{
 		this.originalTitle = originalTitle;
-	}
-
-	@XmlElement(name = "review")
-	@XmlElementWrapper(name = "reviews")
-	public List<ReviewContent> getReviews()
-	{
-		return reviews;
-	}
-
-	public void setReviews(List<ReviewContent> reviews)
-	{
-		this.reviews = reviews;
 	}
 }

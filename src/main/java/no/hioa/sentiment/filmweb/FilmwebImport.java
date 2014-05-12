@@ -20,24 +20,24 @@ import com.mongodb.MongoClient;
 
 public class FilmwebImport
 {
-	private static final Logger	consoleLogger	= LoggerFactory.getLogger("stdoutLogger");
+	private static final Logger consoleLogger = LoggerFactory.getLogger("stdoutLogger");
 
 	@Parameter(names = "-db", description = "Mongo database name")
-	private String				dbName			= "filmweb";
+	private String dbName = "filmweb";
 
 	@Parameter(names = "-xml", description = "Path to xml file")
-	private String				xmlFile;
+	private String xmlFile;
 
 	@Parameter(names = "-p", description = "Print statistics")
-	private boolean				printStats		= false;
+	private boolean printStats = false;
 
-	private MongoOperations		mongoOperations;
+	private MongoOperations mongoOperations;
 
 	public static void main(String[] args) throws UnknownHostException
 	{
 		PropertyConfigurator.configure("log4j.properties");
 
-		new FilmwebImport(args).printStats();
+		new FilmwebImport(args);
 	}
 
 	public FilmwebImport(String[] args) throws UnknownHostException
@@ -61,42 +61,55 @@ public class FilmwebImport
 		List<Movie> movies = mongoOperations.findAll(Movie.class);
 		consoleLogger.info("Number of movies in {} is {}", dbName, movies.size());
 
-		long reviews = 0;
-		for (Movie movie : movies)
-			reviews += movie.getReviews().size();
-		consoleLogger.info("Number of reviews in {} is {}", dbName, reviews);
+		List<Review> reviews = mongoOperations.findAll(Review.class);
+		consoleLogger.info("Number of reviews in {} is {}", dbName, reviews.size());
 	}
 
 	public long insertXmlIntoMongo(File xmlFile)
 	{
-		MovieHeader movies = null;
+		MovieHeaderXML movies = null;
 
 		try
 		{
-			JAXBContext context = JAXBContext.newInstance(MovieHeader.class);
+			JAXBContext context = JAXBContext.newInstance(MovieHeaderXML.class);
 			Unmarshaller unmarshaller = context.createUnmarshaller();
-			movies = (MovieHeader) unmarshaller.unmarshal(xmlFile);
-		}
-		catch (Exception ex)
+			movies = (MovieHeaderXML) unmarshaller.unmarshal(xmlFile);
+		} catch (Exception ex)
 		{
 			consoleLogger.error("Unknown error", ex);
+			return 0;
 		}
 
 		consoleLogger.info("Movies extracted: {}", movies.getMovies().size());
 
-		if (mongoOperations.collectionExists(Movie.class))
-		{
-			mongoOperations.dropCollection(Movie.class);
-		}
+		createCollection(Movie.class);
+		createCollection(Review.class);
 
-		mongoOperations.createCollection(Movie.class);
+		consoleLogger.info("Inserting movies and reviews into mongodb");
 
-		consoleLogger.info("Inserting movies into mongodb");
-		for (Movie movie : movies.getMovies())
+		for (MovieXML movie : movies.getMovies())
 		{
-			mongoOperations.insert(movie);
+			Movie internalMovie = new Movie(movie.getLink(), movie.getTitle(), movie.getOriginalTitle());
+			mongoOperations.insert(internalMovie);
+
+			for (ReviewXML review : movie.getReviews())
+			{
+				Review internalReview = new Review(internalMovie.getId(), review.getLink(), review.getRating(), review.getName(),
+						review.getContent(), review.getDomain());
+				mongoOperations.insert(internalReview);
+			}
 		}
 
 		return movies.getMovies().size();
+	}
+
+	void createCollection(Class<?> clazz)
+	{
+		if (mongoOperations.collectionExists(clazz))
+		{
+			mongoOperations.dropCollection(clazz);
+		}
+
+		mongoOperations.createCollection(clazz);
 	}
 }

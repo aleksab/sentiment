@@ -1,20 +1,17 @@
 package no.hioa.sentiment.filmweb;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
+import javax.xml.bind.annotation.XmlRootElement;
 
-@Document(collection="review")
-public class ReviewContent
+@XmlRootElement(name = "review")
+public class ReviewXML
 {
-	@Id
-	private String	id;
-	private String	link;
-	private int		rating;
-	private String	name;
-	private String	content;
-	private String	domain;
+	private String link;
+	private int rating;
+	private String name;
+	private String content;
+	private String domain;
 
-	public ReviewContent()
+	public ReviewXML()
 	{
 
 	}

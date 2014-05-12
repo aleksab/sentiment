@@ -19,30 +19,45 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.SimpleMongoDbFactory;
+import org.springframework.data.mongodb.core.query.BasicQuery;
 import org.springframework.data.mongodb.core.query.Query;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoCredential;
+import com.mongodb.ServerAddress;
 
 @SuppressWarnings("deprecation")
 public class NewsletterImport
 {
-	private static final Logger	consoleLogger	= LoggerFactory.getLogger("stdoutLogger");
+	private static final Logger consoleLogger = LoggerFactory.getLogger("stdoutLogger");
 
 	@Parameter(names = "-db", description = "Mongo database name")
-	private String				dbName			= "newspaper";
+	private String dbName = "newspaper";
 
 	@Parameter(names = "-v1path", description = "Path to folder of version 1 files")
-	private String				version1folder;
+	private String version1folder;
 
 	@Parameter(names = "-v2path", description = "Path to folder of version 2 files")
-	private String				version2folder;
+	private String version2folder;
 
 	@Parameter(names = "-p", description = "Print statistics")
-	private boolean				printStats		= false;
+	private boolean printStats = false;
 
-	private MongoOperations		mongoOperations;
+	@Parameter(names = "-host", description = "Host to mongo server", required = true)
+	private String mongoHost;
+
+	@Parameter(names = "-username", description = "Username of mongo user", required = true)
+	private String mongoUsername;
+
+	@Parameter(names = "-password", description = "Password for mongo user", required = true)
+	private String mongoPassword;
+
+	@Parameter(names = "-authdb", description = "Name of database where user is defined")
+	private String mongoAuthDb = "admin";
+
+	private MongoOperations mongoOperations;
 
 	public static void main(String[] args) throws UnknownHostException
 	{
@@ -54,7 +69,10 @@ public class NewsletterImport
 	public NewsletterImport(String[] args) throws UnknownHostException
 	{
 		JCommander commander = new JCommander(this, args);
-		mongoOperations = new MongoTemplate(new SimpleMongoDbFactory(new MongoClient("dev.prognett.no"), dbName));
+		List<MongoCredential> credentialsList = new LinkedList<>();
+		credentialsList.add(MongoCredential.createMongoCRCredential(mongoUsername, mongoAuthDb, mongoPassword.toCharArray()));
+		MongoClient client = new MongoClient(new ServerAddress(mongoHost), credentialsList);
+		mongoOperations = new MongoTemplate(new SimpleMongoDbFactory(client, dbName));
 
 		if (printStats)
 			printStats();
@@ -77,7 +95,8 @@ public class NewsletterImport
 		long articles = mongoOperations.count(new Query(), Article.class);
 		consoleLogger.info("Number of articles in {} is {}", dbName, articles);
 
-		List<Article> arts = mongoOperations.findAll(Article.class);
+		BasicQuery query = new BasicQuery("{ link : 'http://stavanger-aftenblad.no/nyheter/nytt/1998/1016/223813.html' }");
+		List<Article> arts = mongoOperations.find(query, Article.class);
 		for (Article art : arts)
 			consoleLogger.info(art.getContent());
 	}
@@ -135,8 +154,7 @@ public class NewsletterImport
 			{
 				consoleLogger.info("Checking folder {}", file.getAbsolutePath());
 				totalArticles += insertAllArticlesVersion2(file);
-			}
-			else
+			} else
 			{
 				if (file.getName().endsWith("html4"))
 				{
@@ -195,12 +213,10 @@ public class NewsletterImport
 
 				articles.add(new Article(link, newspaper, date, content.toString()));
 			}
-		}
-		catch (Exception ex)
+		} catch (Exception ex)
 		{
 			consoleLogger.error("Could not read content from file " + file.getAbsolutePath(), ex);
-		}
-		finally
+		} finally
 		{
 			IOUtils.closeQuietly(reader);
 		}
@@ -231,8 +247,7 @@ public class NewsletterImport
 				try
 				{
 					fmt.parse(year + "." + month + "." + day);
-				}
-				catch (Exception ex)
+				} catch (Exception ex)
 				{
 					date = fmt.parse("00.01.01");
 				}
@@ -247,12 +262,10 @@ public class NewsletterImport
 
 				articles.add(new Article(link, newspaper, date, content.toString()));
 			}
-		}
-		catch (Exception ex)
+		} catch (Exception ex)
 		{
 			consoleLogger.error("Could not read content from file " + file.getAbsolutePath(), ex);
-		}
-		finally
+		} finally
 		{
 			IOUtils.closeQuietly(reader);
 		}
