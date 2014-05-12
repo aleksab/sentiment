@@ -27,6 +27,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.SimpleMongoDbFactory;
+import org.springframework.data.mongodb.core.query.BasicQuery;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 
 import com.mongodb.MongoClient;
 
@@ -41,12 +44,47 @@ public class FilmwebPmi implements PmiCalculator
 	{
 		PropertyConfigurator.configure("log4j.properties");
 
-		new FilmwebPmi().calculateCandidatePmi(new File("target/"), "so-pmi-10.txt", 10);
+		//new FilmwebPmi().calculateCandidatePmi(new File("target/"), "so-pmi-10.txt", 10);
+		new FilmwebPmi().printStats();
 	}
 
 	public FilmwebPmi() throws UnknownHostException
 	{
 		mongoOperations = new MongoTemplate(new SimpleMongoDbFactory(new MongoClient(), "filmweb"));
+	}
+	
+	public void printStats()
+	{		
+		long reviews = mongoOperations.count(new Query(), Review.class);
+		consoleLogger.info("Number of reviews in is {}", reviews);
+				
+		long word1count = mongoOperations.count(new Query().addCriteria(Criteria.where("content").regex(".*super.*", "i")), Review.class);
+		long word2count = mongoOperations.count(new Query().addCriteria(Criteria.where("content").regex(".*deilig.*", "i")), Review.class);
+		long wordBothcount = mongoOperations.count(new Query().addCriteria(Criteria.where("content").regex("(.*)(super.*deilig|deilig.*super)(.*)", "i")), Review.class);
+		consoleLogger.info("Count word1: {}", word1count);
+		consoleLogger.info("Count word2: {}", word2count);
+		consoleLogger.info("Count word both: {}", wordBothcount);
+		
+		// let's verify the hard way		
+		List<Review> allReviews = mongoOperations.findAll(Review.class);
+		long word1countReal = 0;
+		long word2countReal = 0;
+		long wordBothcountReal = 0;
+		
+		for (Review review : allReviews)
+		{
+			if (review.getContent().toLowerCase().contains("super"))
+				word1countReal++;
+			if (review.getContent().toLowerCase().contains("deilig"))
+				word2countReal++;
+			if (review.getContent().toLowerCase().contains("super") && review.getContent().toLowerCase().contains("deilig"))
+				wordBothcountReal++;
+		}
+		
+		consoleLogger.info("Count (real) word1: {}", word1countReal);
+		consoleLogger.info("Count (real) word2: {}", word2countReal);
+		consoleLogger.info("Count (real) word both: {}", wordBothcountReal);
+		
 	}
 
 	public void calculateCandidatePmi(File outputDir, String filname, int limit)
