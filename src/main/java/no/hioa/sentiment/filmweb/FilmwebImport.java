@@ -25,30 +25,30 @@ import com.mongodb.ServerAddress;
 
 public class FilmwebImport
 {
-	private static final Logger consoleLogger = LoggerFactory.getLogger("stdoutLogger");
+	private static final Logger	consoleLogger	= LoggerFactory.getLogger("stdoutLogger");
 
 	@Parameter(names = "-db", description = "Mongo database name")
-	private String dbName = "filmweb";
+	private String				dbName			= "filmweb";
 
 	@Parameter(names = "-xml", description = "Path to xml file")
-	private String xmlFile;
+	private String				xmlFile;
 
 	@Parameter(names = "-p", description = "Print statistics")
-	private boolean printStats = false;
+	private boolean				printStats		= false;
 
 	@Parameter(names = "-host", description = "Host to mongo server", required = true)
-	private String mongoHost;
+	private String				mongoHost;
 
 	@Parameter(names = "-username", description = "Username of mongo user", required = true)
-	private String mongoUsername;
+	private String				mongoUsername;
 
 	@Parameter(names = "-password", description = "Password for mongo user", required = true)
-	private String mongoPassword;
+	private String				mongoPassword;
 
 	@Parameter(names = "-authdb", description = "Name of database where user is defined")
-	private String mongoAuthDb = "admin";
+	private String				mongoAuthDb		= "admin";
 
-	private MongoOperations mongoOperations;
+	private MongoOperations		mongoOperations;
 
 	public static void main(String[] args) throws UnknownHostException
 	{
@@ -98,7 +98,8 @@ public class FilmwebImport
 			JAXBContext context = JAXBContext.newInstance(MovieHeaderXML.class);
 			Unmarshaller unmarshaller = context.createUnmarshaller();
 			movies = (MovieHeaderXML) unmarshaller.unmarshal(xmlFile);
-		} catch (Exception ex)
+		}
+		catch (Exception ex)
 		{
 			consoleLogger.error("Unknown error", ex);
 			return 0;

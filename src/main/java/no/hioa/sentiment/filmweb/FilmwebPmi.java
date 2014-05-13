@@ -19,6 +19,8 @@ import java.util.Scanner;
 import java.util.StringTokenizer;
 
 import no.hioa.sentiment.service.PmiCalculator;
+import no.hioa.sentiment.service.WordDistance;
+import no.hioa.sentiment.service.WordOccurence;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.PropertyConfigurator;
@@ -27,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.SimpleMongoDbFactory;
+import org.springframework.data.mongodb.core.mapreduce.MapReduceResults;
 import org.springframework.data.mongodb.core.query.BasicQuery;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -35,56 +38,160 @@ import com.mongodb.MongoClient;
 
 public class FilmwebPmi implements PmiCalculator
 {
-	private static final Logger logger = LoggerFactory.getLogger("fileLogger");
-	private static final Logger consoleLogger = LoggerFactory.getLogger("stdoutLogger");
+	private static final Logger	logger			= LoggerFactory.getLogger("fileLogger");
+	private static final Logger	consoleLogger	= LoggerFactory.getLogger("stdoutLogger");
 
-	MongoOperations mongoOperations;
+	private MongoOperations		mongoOperations;
 
 	public static void main(String[] args) throws UnknownHostException
 	{
 		PropertyConfigurator.configure("log4j.properties");
 
-		//new FilmwebPmi().calculateCandidatePmi(new File("target/"), "so-pmi-10.txt", 10);
-		new FilmwebPmi().printStats();
+		// new FilmwebPmi().calculateCandidatePmi(new File("target/"), "so-pmi-10.txt", 10);
+		// new FilmwebPmi().findWordOccurence("super");
+		new FilmwebPmi().findWordDistance("super", "deilig", 10);
+		// new FilmwebPmi().printStats();
 	}
 
 	public FilmwebPmi() throws UnknownHostException
 	{
 		mongoOperations = new MongoTemplate(new SimpleMongoDbFactory(new MongoClient(), "filmweb"));
 	}
-	
+
+	public class ValueObject
+	{
+
+		private String	id;
+
+		private float	value;
+
+		public String getId()
+		{
+			return id;
+		}
+
+		public float getValue()
+		{
+			return value;
+		}
+
+		public void setValue(float value)
+		{
+			this.value = value;
+		}
+
+		@Override
+		public String toString()
+		{
+			return "ValueObject [id=" + id + ", value=" + value + "]";
+		}
+
+	}
+
+	/**
+	 * Find number of occurrence where two words are within a maximum distance of each other.
+	 * 
+	 * @param word
+	 * @return
+	 */
+	public WordDistance findWordDistance(String word1, String word2, long maxDistance)
+	{
+		if (!mongoOperations.collectionExists(WordDistance.class))
+			mongoOperations.createCollection(WordDistance.class);
+
+		BasicQuery query = new BasicQuery("{ word1 : '" + word1 + "', word2 : '" + word2 + "', maxDistance : " + maxDistance + " }");
+		WordDistance wordDistance = mongoOperations.findOne(query, WordDistance.class);
+
+		if (wordDistance == null)
+		{
+			consoleLogger.info("Word {} and {} with max distance of {} does not exists in lookup table", word1, word2, maxDistance);
+
+			Query regexQuery = new Query().addCriteria(Criteria.where("content").regex(
+					"(.*)(" + word1 + ".*" + word2 + "|" + word2 + ".*" + word1 + ")(.*)", "i"));
+			String mapFunction = getJsFileContent(new File("src/main/resources/map.js")).replaceAll("%WORD1%", word1).replaceAll("%WORD2%", word2);
+			String reduceFunction = getJsFileContent(new File("src/main/resources/reduce.js"));
+
+			MapReduceResults<ValueObject> results = mongoOperations.mapReduce(regexQuery, "review", mapFunction, reduceFunction, ValueObject.class);
+			for (ValueObject valueObject : results)
+			{
+				System.out.println(valueObject);
+			}
+
+			// consoleLogger.info("Found {} reviews that we need to check", reviews.size());
+		}
+		else
+			consoleLogger.info("Word {} and {} with max distance of {} found in lookup table with occurence {}", word1, word2, maxDistance,
+					wordDistance.getOccurence());
+
+		return wordDistance;
+	}
+
+	/**
+	 * Find occurence of a word in filmweb reviews.
+	 * 
+	 * @param word
+	 * @return
+	 */
+	public WordOccurence findWordOccurence(String word)
+	{
+		if (!mongoOperations.collectionExists(WordOccurence.class))
+			mongoOperations.createCollection(WordOccurence.class);
+
+		BasicQuery query = new BasicQuery("{ word : '" + word + "' }");
+		WordOccurence wordOccurence = mongoOperations.findOne(query, WordOccurence.class);
+
+		if (wordOccurence == null)
+		{
+			consoleLogger.info("Word {} does not exists in lookup table", word);
+
+			long wordCount = mongoOperations.count(new Query().addCriteria(Criteria.where("content").regex(".*" + word + ".*", "i")), Review.class);
+			wordOccurence = new WordOccurence(word, wordCount);
+			mongoOperations.insert(wordOccurence);
+
+			consoleLogger.info("Occurence for {} is {}", word, wordCount);
+		}
+		else
+			consoleLogger.info("Word {} found in lookup table with occurence {}", word, wordOccurence.getOccurence());
+
+		return wordOccurence;
+	}
+
 	public void printStats()
-	{		
+	{
 		long reviews = mongoOperations.count(new Query(), Review.class);
 		consoleLogger.info("Number of reviews in is {}", reviews);
-				
-		long word1count = mongoOperations.count(new Query().addCriteria(Criteria.where("content").regex(".*super.*", "i")), Review.class);
-		long word2count = mongoOperations.count(new Query().addCriteria(Criteria.where("content").regex(".*deilig.*", "i")), Review.class);
-		long wordBothcount = mongoOperations.count(new Query().addCriteria(Criteria.where("content").regex("(.*)(super.*deilig|deilig.*super)(.*)", "i")), Review.class);
+
+		long word1count = mongoOperations.count(new Query().addCriteria(Criteria.where("content").regex(".* super .*", "i")), Review.class);
+		long word2count = mongoOperations.count(new Query().addCriteria(Criteria.where("content").regex(".* deilig .*", "i")), Review.class);
+		long wordBothcount = mongoOperations.count(
+				new Query().addCriteria(Criteria.where("content").regex("(.*)( super (.*) deilig | deilig (.*) super )(.*)", "i")), Review.class);
 		consoleLogger.info("Count word1: {}", word1count);
 		consoleLogger.info("Count word2: {}", word2count);
 		consoleLogger.info("Count word both: {}", wordBothcount);
-		
-		// let's verify the hard way		
+
+		// let's verify the hard way
 		List<Review> allReviews = mongoOperations.findAll(Review.class);
 		long word1countReal = 0;
 		long word2countReal = 0;
 		long wordBothcountReal = 0;
-		
+
 		for (Review review : allReviews)
 		{
-			if (review.getContent().toLowerCase().contains("super"))
+			if (review.getContent().toLowerCase().contains(" super "))
 				word1countReal++;
-			if (review.getContent().toLowerCase().contains("deilig"))
+			if (review.getContent().toLowerCase().contains(" deilig "))
 				word2countReal++;
-			if (review.getContent().toLowerCase().contains("super") && review.getContent().toLowerCase().contains("deilig"))
+			if (review.getContent().toLowerCase().contains(" super ") && review.getContent().toLowerCase().contains(" deilig "))
+			{
 				wordBothcountReal++;
+				System.out.println(review.getContent());
+			}
 		}
-		
+
 		consoleLogger.info("Count (real) word1: {}", word1countReal);
 		consoleLogger.info("Count (real) word2: {}", word2countReal);
 		consoleLogger.info("Count (real) word both: {}", wordBothcountReal);
-		
+
 	}
 
 	public void calculateCandidatePmi(File outputDir, String filname, int limit)
@@ -111,7 +218,8 @@ public class FilmwebPmi implements PmiCalculator
 				writer.append("Word " + word + " has SO-PMI of " + soPmi.get(word) + "\n");
 				consoleLogger.info("Word {} has SO-PMI of {}", word, soPmi.get(word));
 			}
-		} catch (IOException ex)
+		}
+		catch (IOException ex)
 		{
 			logger.error("Could not save SO-PMI to file " + newFile, ex);
 		}
@@ -268,11 +376,32 @@ public class FilmwebPmi implements PmiCalculator
 				String input = scanner.nextLine().toLowerCase();
 				words.add(input);
 			}
-		} catch (Exception ex)
+		}
+		catch (Exception ex)
 		{
 			logger.error("Could not read content for file " + file.getAbsolutePath(), ex);
 		}
 
 		return words;
+	}
+
+	private String getJsFileContent(File file)
+	{
+		StringBuffer buffer = new StringBuffer();
+
+		try (Scanner scanner = new Scanner(new FileInputStream(file), "UTF-8"))
+		{
+			while (scanner.hasNextLine())
+			{
+				String input = scanner.nextLine();
+				buffer.append(input + "\n");
+			}
+		}
+		catch (Exception ex)
+		{
+			logger.error("Could not read content for file " + file.getAbsolutePath(), ex);
+		}
+
+		return buffer.toString();
 	}
 }
