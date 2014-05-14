@@ -32,7 +32,7 @@ public class SeedProvider
 	{
 		List<String> words = new LinkedList<>();
 
-		try (Scanner scanner = new Scanner(new FileInputStream(file), "UTF-8"))
+		try (Scanner scanner = new Scanner(new FileInputStream(file), "ISO-8859-1"))
 		{
 			while (scanner.hasNextLine())
 			{
