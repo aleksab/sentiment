@@ -1,5 +1,7 @@
 package no.hioa.sentiment.service;
 
+import java.util.Set;
+
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.commons.lang.builder.ToStringBuilder;
@@ -11,24 +13,22 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class WordDistance
 {
 	@Id
-	private String	id;
-	private String	word1;
-	private String	word2;
-	private long	maxDistance;
-	private long	occurence;
+	private String		id;
+	private String		word1;
+	private String		word2;
+	private Set<Long>	distances;
 
 	public WordDistance()
 	{
 
 	}
 
-	public WordDistance(String word1, String word2, long maxDistance, long occurence)
+	public WordDistance(String word1, String word2, Set<Long> distances)
 	{
 		super();
 		this.word1 = word1;
 		this.word2 = word2;
-		this.maxDistance = maxDistance;
-		this.occurence = occurence;
+		this.distances = distances;
 	}
 
 	public String getId()
@@ -61,24 +61,14 @@ public class WordDistance
 		this.word2 = word2;
 	}
 
-	public long getMaxDistance()
+	public Set<Long> getDistances()
 	{
-		return maxDistance;
+		return distances;
 	}
 
-	public void setMaxDistance(long maxDistance)
+	public void setDistances(Set<Long> distances)
 	{
-		this.maxDistance = maxDistance;
-	}
-
-	public long getOccurence()
-	{
-		return occurence;
-	}
-
-	public void setOccurence(long occurence)
-	{
-		this.occurence = occurence;
+		this.distances = distances;
 	}
 
 	@Override

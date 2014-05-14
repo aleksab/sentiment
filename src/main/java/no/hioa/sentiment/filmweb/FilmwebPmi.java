@@ -12,17 +12,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.StringTokenizer;
+import java.util.Set;
 
 import no.hioa.sentiment.service.PmiCalculator;
 import no.hioa.sentiment.service.WordDistance;
 import no.hioa.sentiment.service.WordOccurence;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
 import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,10 +49,7 @@ public class FilmwebPmi implements PmiCalculator
 	{
 		PropertyConfigurator.configure("log4j.properties");
 
-		// new FilmwebPmi().calculateCandidatePmi(new File("target/"), "so-pmi-10.txt", 10);
-		// new FilmwebPmi().findWordOccurence("super");
-		new FilmwebPmi().findWordDistance("super", "deilig", 10);
-		// new FilmwebPmi().printStats();
+		new FilmwebPmi().calculateCandidatePmi(new File("target/"), 10);
 	}
 
 	public FilmwebPmi() throws UnknownHostException
@@ -58,143 +57,14 @@ public class FilmwebPmi implements PmiCalculator
 		mongoOperations = new MongoTemplate(new SimpleMongoDbFactory(new MongoClient(), "filmweb"));
 	}
 
-	public class ValueObject
-	{
-
-		private String	id;
-
-		private float	value;
-
-		public String getId()
-		{
-			return id;
-		}
-
-		public float getValue()
-		{
-			return value;
-		}
-
-		public void setValue(float value)
-		{
-			this.value = value;
-		}
-
-		@Override
-		public String toString()
-		{
-			return "ValueObject [id=" + id + ", value=" + value + "]";
-		}
-
-	}
-
 	/**
-	 * Find number of occurrence where two words are within a maximum distance of each other.
+	 * Calculate SO-PMI for all candidate words.
 	 * 
-	 * @param word
-	 * @return
+	 * @param outputDir
+	 * @param filname
+	 * @param maxDistance
 	 */
-	public WordDistance findWordDistance(String word1, String word2, long maxDistance)
-	{
-		if (!mongoOperations.collectionExists(WordDistance.class))
-			mongoOperations.createCollection(WordDistance.class);
-
-		BasicQuery query = new BasicQuery("{ word1 : '" + word1 + "', word2 : '" + word2 + "', maxDistance : " + maxDistance + " }");
-		WordDistance wordDistance = mongoOperations.findOne(query, WordDistance.class);
-
-		if (wordDistance == null)
-		{
-			consoleLogger.info("Word {} and {} with max distance of {} does not exists in lookup table", word1, word2, maxDistance);
-
-			Query regexQuery = new Query().addCriteria(Criteria.where("content").regex(
-					"(.*)(" + word1 + ".*" + word2 + "|" + word2 + ".*" + word1 + ")(.*)", "i"));
-			String mapFunction = getJsFileContent(new File("src/main/resources/map.js")).replaceAll("%WORD1%", word1).replaceAll("%WORD2%", word2);
-			String reduceFunction = getJsFileContent(new File("src/main/resources/reduce.js"));
-
-			MapReduceResults<ValueObject> results = mongoOperations.mapReduce(regexQuery, "review", mapFunction, reduceFunction, ValueObject.class);
-			for (ValueObject valueObject : results)
-			{
-				System.out.println(valueObject);
-			}
-
-			// consoleLogger.info("Found {} reviews that we need to check", reviews.size());
-		}
-		else
-			consoleLogger.info("Word {} and {} with max distance of {} found in lookup table with occurence {}", word1, word2, maxDistance,
-					wordDistance.getOccurence());
-
-		return wordDistance;
-	}
-
-	/**
-	 * Find occurence of a word in filmweb reviews.
-	 * 
-	 * @param word
-	 * @return
-	 */
-	public WordOccurence findWordOccurence(String word)
-	{
-		if (!mongoOperations.collectionExists(WordOccurence.class))
-			mongoOperations.createCollection(WordOccurence.class);
-
-		BasicQuery query = new BasicQuery("{ word : '" + word + "' }");
-		WordOccurence wordOccurence = mongoOperations.findOne(query, WordOccurence.class);
-
-		if (wordOccurence == null)
-		{
-			consoleLogger.info("Word {} does not exists in lookup table", word);
-
-			long wordCount = mongoOperations.count(new Query().addCriteria(Criteria.where("content").regex(".*" + word + ".*", "i")), Review.class);
-			wordOccurence = new WordOccurence(word, wordCount);
-			mongoOperations.insert(wordOccurence);
-
-			consoleLogger.info("Occurence for {} is {}", word, wordCount);
-		}
-		else
-			consoleLogger.info("Word {} found in lookup table with occurence {}", word, wordOccurence.getOccurence());
-
-		return wordOccurence;
-	}
-
-	public void printStats()
-	{
-		long reviews = mongoOperations.count(new Query(), Review.class);
-		consoleLogger.info("Number of reviews in is {}", reviews);
-
-		long word1count = mongoOperations.count(new Query().addCriteria(Criteria.where("content").regex(".* super .*", "i")), Review.class);
-		long word2count = mongoOperations.count(new Query().addCriteria(Criteria.where("content").regex(".* deilig .*", "i")), Review.class);
-		long wordBothcount = mongoOperations.count(
-				new Query().addCriteria(Criteria.where("content").regex("(.*)( super (.*) deilig | deilig (.*) super )(.*)", "i")), Review.class);
-		consoleLogger.info("Count word1: {}", word1count);
-		consoleLogger.info("Count word2: {}", word2count);
-		consoleLogger.info("Count word both: {}", wordBothcount);
-
-		// let's verify the hard way
-		List<Review> allReviews = mongoOperations.findAll(Review.class);
-		long word1countReal = 0;
-		long word2countReal = 0;
-		long wordBothcountReal = 0;
-
-		for (Review review : allReviews)
-		{
-			if (review.getContent().toLowerCase().contains(" super "))
-				word1countReal++;
-			if (review.getContent().toLowerCase().contains(" deilig "))
-				word2countReal++;
-			if (review.getContent().toLowerCase().contains(" super ") && review.getContent().toLowerCase().contains(" deilig "))
-			{
-				wordBothcountReal++;
-				System.out.println(review.getContent());
-			}
-		}
-
-		consoleLogger.info("Count (real) word1: {}", word1countReal);
-		consoleLogger.info("Count (real) word2: {}", word2countReal);
-		consoleLogger.info("Count (real) word both: {}", wordBothcountReal);
-
-	}
-
-	public void calculateCandidatePmi(File outputDir, String filname, int limit)
+	public void calculateCandidatePmi(File outputDir, int maxDistance)
 	{
 		List<String> candidates = getCandidateWords();
 		List<String> pWords = getPositiveWords();
@@ -203,13 +73,14 @@ public class FilmwebPmi implements PmiCalculator
 
 		for (String candidate : candidates)
 		{
-			consoleLogger.info("Calculating SO-PMI for candidate word {} with limit {}", candidate, limit);
-			soPmi.put(candidate, calculateSoPmi(candidate, pWords, nWords, limit));
+			consoleLogger.info("Calculating SO-PMI for candidate word {} with limit {}", candidate, maxDistance);
+			soPmi.put(candidate, calculateSoPmi(candidate, pWords, nWords, maxDistance));
 		}
 
 		soPmi = MapUtil.sortByValue(soPmi);
 
-		Path newFile = Paths.get(outputDir.getAbsolutePath(), filname);
+		String fileName = "so-pmi-" + maxDistance + ".txt";
+		Path newFile = Paths.get(outputDir.getAbsolutePath(), fileName);
 		consoleLogger.info("Saving result to file " + newFile);
 		try (BufferedWriter writer = Files.newBufferedWriter(newFile, Charset.defaultCharset()))
 		{
@@ -225,129 +96,124 @@ public class FilmwebPmi implements PmiCalculator
 		}
 	}
 
-	public BigDecimal calculateSoPmi(String word, List<String> pWords, List<String> nWords, int limit)
+	@Override
+	public long findWordDistance(String word1, String word2, long maxDistance)
 	{
-		BigDecimal totalPositive = BigDecimal.ZERO.setScale(5);
-		BigDecimal totalNegative = BigDecimal.ZERO.setScale(5);
+		if (!mongoOperations.collectionExists(WordDistance.class))
+			mongoOperations.createCollection(WordDistance.class);
+
+		BasicQuery query = new BasicQuery("{ word1 : '" + word1 + "', word2 : '" + word2 + "' }");
+		WordDistance wordDistance = mongoOperations.findOne(query, WordDistance.class);
+
+		if (wordDistance == null)
+		{
+			consoleLogger.info("Word {} and {} with max distance of {} does not exists in lookup table", word1, word2, maxDistance);
+
+			Query regexQuery = new Query().addCriteria(Criteria.where("content").regex(
+					"(\\b" + word1 + "\\b)(.*)(\\b" + word2 + "\\b)|(\\b" + word2 + "\\b)(.*)(\\b" + word1 + "\\b)", "isg"));
+			String mapFunction = getJsFileContent(new File("src/main/resources/map.js")).replaceAll("%WORD1%", word1).replaceAll("%WORD2%", word2);
+			String reduceFunction = getJsFileContent(new File("src/main/resources/reduce.js"));
+
+			MapReduceResults<DistanceResult> results = mongoOperations.mapReduce(regexQuery, "review", mapFunction, reduceFunction,
+					DistanceResult.class);
+
+			Set<Long> distances = new HashSet<>();
+			for (DistanceResult result : results)
+			{
+				// id in results is the distance while value is occurrences
+				distances.add(result.getId());
+			}
+
+			wordDistance = new WordDistance(word1, word2, distances);
+			mongoOperations.insert(wordDistance);
+
+			consoleLogger.info("Word {} and {} have these distances: {}", word1, word2, distances);
+		}
+		else
+			consoleLogger.info("Word {} and {} with these distance {} found in lookup table", word1, word2, wordDistance.getDistances());
+
+		int occurrences = 0;
+		if (maxDistance == -1)
+			occurrences = wordDistance.getDistances().size();
+		else
+		{
+			for (Long distance : wordDistance.getDistances())
+			{
+				if (distance <= maxDistance)
+					occurrences++;
+			}
+		}
+
+		consoleLogger.info("Word {} and {} have {} occurences within distance of {}", word1, word2, occurrences, maxDistance);
+
+		return occurrences;
+	}
+
+	@Override
+	public long findWordOccurence(String word)
+	{
+		if (!mongoOperations.collectionExists(WordOccurence.class))
+			mongoOperations.createCollection(WordOccurence.class);
+
+		BasicQuery query = new BasicQuery("{ word : '" + word + "' }");
+		WordOccurence wordOccurence = mongoOperations.findOne(query, WordOccurence.class);
+
+		if (wordOccurence == null)
+		{
+			consoleLogger.info("Word {} does not exists in lookup table", word);
+
+			long wordCount = mongoOperations.count(new Query().addCriteria(Criteria.where("content").regex("\\b" + word + "\\b", "i")), Review.class);
+			wordOccurence = new WordOccurence(word, wordCount);
+			mongoOperations.insert(wordOccurence);
+
+			consoleLogger.info("Occurence for {} is {}", word, wordCount);
+		}
+		else
+			consoleLogger.info("Word {} found in lookup table with occurence {}", word, wordOccurence.getOccurence());
+
+		return wordOccurence.getOccurence();
+	}
+
+	@Override
+	public BigDecimal calculateSoPmi(String word, List<String> pWords, List<String> nWords, int maxDistance)
+	{
+		BigDecimal totalHitsNearPositive = BigDecimal.ZERO;
+		BigDecimal totalHitsNearNegative = BigDecimal.ZERO;
+		BigDecimal totalHitsPositive = BigDecimal.ZERO;
+		BigDecimal totalHitsNegative = BigDecimal.ZERO;
 
 		for (String positive : pWords)
 		{
-			totalPositive = totalPositive.add(calculatePmi(word, positive, limit));
+			totalHitsNearPositive = totalHitsNearPositive.add(new BigDecimal(findWordDistance(word, positive, maxDistance)));
+			totalHitsPositive = totalHitsPositive.add(new BigDecimal(findWordOccurence(positive)));
 		}
 
 		for (String negative : nWords)
 		{
-			totalNegative = totalNegative.add(calculatePmi(word, negative, limit));
+			totalHitsNearNegative = totalHitsNearNegative.add(new BigDecimal(findWordDistance(word, negative, maxDistance)));
+			totalHitsNegative = totalHitsNegative.add(new BigDecimal(findWordOccurence(negative)));
 		}
 
-		logger.info("Total positive for word {} is {}", word, totalPositive);
-		logger.info("Total negative for word {} is {}", word, totalNegative);
+		logger.info("Total hits near positive words are {}", totalHitsNearPositive);
+		logger.info("Total hits near negative words are {}", totalHitsNearNegative);
+		logger.info("Total hits of positive words are {}", totalHitsPositive);
+		logger.info("Total hits of negative words are {}", totalHitsNegative);
 
-		BigDecimal soPmi = totalPositive.subtract(totalNegative).setScale(5, RoundingMode.CEILING);
-		consoleLogger.info("Total SO-PMI for word {} is {} with limit {}", word, soPmi, limit);
+		BigDecimal dividend = totalHitsNearPositive.multiply(totalHitsPositive).setScale(5);
+		if (dividend.compareTo(BigDecimal.ZERO) == 0)
+			dividend = new BigDecimal("0.01");
 
-		return soPmi;
-	}
+		BigDecimal divisor = totalHitsNearNegative.multiply(totalHitsNegative).setScale(5);
+		if (divisor.compareTo(BigDecimal.ZERO) == 0)
+			divisor = new BigDecimal("0.01");
 
-	@Override
-	public BigDecimal calculatePmi(String word1, String word2, int limit)
-	{
-		List<Review> reviews = mongoOperations.findAll(Review.class);
-		logger.info("There are {} reviews to calculate pmi for word1 {} and word2 {} with limit {}", reviews.size(), word1, word2, limit);
-
-		BigDecimal totalDocuments = BigDecimal.ZERO.setScale(5);
-		BigDecimal occurenceWord1 = BigDecimal.ZERO.setScale(5);
-		BigDecimal occurenceWord2 = BigDecimal.ZERO.setScale(5);
-		BigDecimal occurenceNear = BigDecimal.ZERO.setScale(5);
-
-		for (Review review : reviews)
-		{
-			totalDocuments = totalDocuments.add(BigDecimal.ONE);
-
-			if (StringUtils.contains(review.getContent(), word1))
-				occurenceWord1 = occurenceWord1.add(BigDecimal.ONE);
-			if (StringUtils.contains(review.getContent(), word2))
-				occurenceWord2 = occurenceWord2.add(BigDecimal.ONE);
-			if (isWithinLimit(review.getContent(), word1, word2, limit))
-				occurenceNear = occurenceNear.add(BigDecimal.ONE);
-		}
-
-		logger.info("Total documents {}", totalDocuments);
-		logger.info("Occurence of word1 ({}) {}", word1, occurenceWord1);
-		logger.info("Occurence of word2 ({}) {}", word2, occurenceWord2);
-		logger.info("Occurence of both words with limit ({}) {}", limit, occurenceNear);
-
-		BigDecimal probabilityWord1 = occurenceWord1.divide(totalDocuments, RoundingMode.CEILING);
-		BigDecimal probabilityWord2 = occurenceWord2.divide(totalDocuments, RoundingMode.CEILING);
-		BigDecimal probabilityBoth = occurenceNear.divide(totalDocuments, RoundingMode.CEILING);
-
-		logger.info("Probability of word1 ({}) {}", word1, probabilityWord1);
-		logger.info("Probability of word2 ({}) {}", word2, probabilityWord2);
-		logger.info("Probability of both words {}", probabilityBoth);
-
-		BigDecimal pmi = calculateBasePmi(probabilityBoth, probabilityWord1, probabilityWord2);
-		logger.info("PMI for {} and {} within limit {} is {}", word1, word2, limit, pmi);
-
-		return pmi;
-	}
-
-	BigDecimal calculateBasePmi(BigDecimal occurenceBoth, BigDecimal occurenceWord1, BigDecimal occurenceWord2)
-	{
-		occurenceBoth = occurenceBoth.setScale(5);
-		occurenceWord1 = occurenceWord1.setScale(5);
-		occurenceWord2 = occurenceWord2.setScale(5);
-
-		// TODO: should we do this or use Laplace smoothing?
-		if (occurenceBoth.compareTo(BigDecimal.ZERO) == 0 || occurenceWord1.multiply(occurenceWord2).compareTo(BigDecimal.ZERO) == 0)
-			return BigDecimal.ZERO;
-
-		BigDecimal result = occurenceBoth.divide(occurenceWord1.multiply(occurenceWord2), RoundingMode.CEILING).setScale(5);
+		BigDecimal result = dividend.divide(divisor, RoundingMode.CEILING);
 
 		// TODO: this is not ideal and we might lose precision
-		return new BigDecimal(Math.log(result.floatValue()) / Math.log(2));
-	}
+		result = new BigDecimal(Math.log(result.floatValue()) / Math.log(2));
+		consoleLogger.info("SO-PMI for word {} is {} with maxDistance {}", word, result, maxDistance);
 
-	/**
-	 * Check if two words are within a certain range of each other in a content.
-	 * 
-	 * @param content
-	 * @param word1
-	 * @param word2
-	 * @param limit
-	 * @return
-	 */
-	boolean isWithinLimit(String content, String word1, String word2, int limit)
-	{
-		if (!content.contains(word1) || !content.contains(word2))
-			return false;
-
-		if (limit <= 0 || limit > content.length())
-			return true;
-
-		StringTokenizer words = new StringTokenizer(content);
-		int word1position = -1;
-		int word2position = -1;
-		int counter = 0;
-
-		while (words.hasMoreTokens())
-		{
-			counter++;
-			String word = words.nextToken();
-
-			if (word.contains(word1))
-				word1position = counter;
-
-			if (word.contains(word2))
-				word2position = counter;
-
-			if (word1position != -1 && word2position != -1)
-			{
-				if (Math.abs(word1position - word2position) <= limit)
-					return true;
-			}
-		}
-
-		return false;
+		return result;
 	}
 
 	List<String> getCandidateWords()
@@ -403,5 +269,37 @@ public class FilmwebPmi implements PmiCalculator
 		}
 
 		return buffer.toString();
+	}
+
+	class DistanceResult
+	{
+		private long	id;
+		private long	value;
+
+		public long getId()
+		{
+			return id;
+		}
+
+		public void setId(long id)
+		{
+			this.id = id;
+		}
+
+		public long getValue()
+		{
+			return value;
+		}
+
+		public void setValue(long value)
+		{
+			this.value = value;
+		}
+
+		@Override
+		public String toString()
+		{
+			return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
+		}
 	}
 }
