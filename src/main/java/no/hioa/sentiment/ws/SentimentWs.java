@@ -25,7 +25,7 @@ import com.beust.jcommander.Parameter;
 
 public class SentimentWs
 {
-	private static final Logger	logger	= LoggerFactory.getLogger("stdoutLogger");
+	private static final Logger	logger	= LoggerFactory.getLogger("fileLogger");
 
 	@Parameter(names = "-port", description = "Webservice port")
 	private int					port	= 5300;
