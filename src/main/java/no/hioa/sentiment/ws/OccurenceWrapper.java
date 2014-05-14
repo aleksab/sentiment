@@ -14,7 +14,7 @@ import com.google.gson.GsonBuilder;
 
 public abstract class OccurenceWrapper extends ResponseTransformerRoute
 {
-	private static final Logger	logger	= LoggerFactory.getLogger("stdoutLogger");
+	private static final Logger	logger	= LoggerFactory.getLogger("fileLogger");
 
 	protected OccurenceWrapper(String path)
 	{
