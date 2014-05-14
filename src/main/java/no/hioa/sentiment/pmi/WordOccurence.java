@@ -1,4 +1,4 @@
-package no.hioa.sentiment.service;
+package no.hioa.sentiment.pmi;
 
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;

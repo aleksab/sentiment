@@ -1,4 +1,4 @@
-package no.hioa.sentiment.service;
+package no.hioa.sentiment.pmi;
 
 import java.math.BigDecimal;
 import java.util.List;
