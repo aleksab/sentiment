@@ -1,12 +1,12 @@
 avskyelig
 barbarisk
-bedrÃ¸vet
+bedrøvet
 dorsk
 drittsekk
 elendig
-hÃ¥plÃ¸s
+håpløs
 inhuman
-kompromisslÃ¸s
+kompromissløs
 melankolsk
 naiv
 primitiv
@@ -15,4 +15,4 @@ slem
 stygg
 urolig
 veik
-vulgÃ¦r
+vulgær

@@ -2,7 +2,7 @@ ekselent
 eksemplarisk
 elegant
 eminent
-enestÃ¥ende
+enestående
 engasjert
 fantastisk
 fenomenal
@@ -12,7 +12,7 @@ heldig
 herlig
 hjelpsom
 intellektuell
-klÃ¸ktig
+kløktig
 mesterlig
 nydelig
 praktfull
@@ -22,12 +22,12 @@ smart
 snill
 storartet
 storslagen
-strÃ¥lende
+strålende
 super
 superb
 suveren
 takknemlig
-tÃ¥lmodig
+tålmodig
 uovertruffent
 utmerket
 vakker
@@ -47,9 +47,9 @@ feig
 forferdelig
 fryktelig
 fryktinngydende
-fÃ¦l
+fæl
 grusom
-hensynslÃ¸s
+hensynsløs
 heslig
 idiotisk
 irriterende
@@ -58,7 +58,7 @@ kynisk
 lei
 mongo
 motbydelig
-nÃ¥delÃ¸s
+nådeløs
 ond
 pinlig
 redselsfull
@@ -67,7 +67,7 @@ skrullete
 smertelig
 svik
 svindel
-sÃ¸rgelig
+sørgelig
 tungsinn
 ubarmhjertig
 uhyggelig
