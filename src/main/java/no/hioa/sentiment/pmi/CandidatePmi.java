@@ -26,7 +26,7 @@ import com.beust.jcommander.Parameter;
 
 public class CandidatePmi
 {
-	private static final Logger	consoleLogger	= LoggerFactory.getLogger("stdoutLogger");
+	private static final Logger	consoleLogger	= LoggerFactory.getLogger("fileLogger");
 
 	@Parameter(names = "-db", description = "Mongo database to use")
 	private String				dbName;
