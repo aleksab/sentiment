@@ -13,14 +13,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import no.hioa.sentiment.service.MongoProvider;
+import no.hioa.sentiment.service.Corpus;
 import no.hioa.sentiment.service.SeedProvider;
 import no.hioa.sentiment.util.MapUtil;
 
 import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.mongodb.core.MongoOperations;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -35,7 +34,6 @@ public class CandidatePmi
 	@Parameter(names = "-max", description = "Max distance between words")
 	private int					maxDistance;
 
-	private MongoOperations		mongoOperations;
 	private PmiCalculator		pmiCalculator;
 
 	public static void main(String[] args) throws UnknownHostException
@@ -48,8 +46,7 @@ public class CandidatePmi
 	public CandidatePmi(String[] args) throws UnknownHostException
 	{
 		new JCommander(this, args);
-		mongoOperations = MongoProvider.getMongoProvider(dbName);
-		pmiCalculator = new DefaultPmiCalculator(mongoOperations);
+		pmiCalculator = new DefaultPmiCalculator(Corpus.MOVIE_REVIEWS);
 
 		calculateCandidatePmi(new File("target/"), maxDistance);
 	}

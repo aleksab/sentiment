@@ -4,12 +4,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
 
-import no.hioa.sentiment.filmweb.Review;
+import no.hioa.sentiment.service.Corpus;
+import no.hioa.sentiment.service.MongoProvider;
 
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
@@ -25,11 +27,13 @@ public class DefaultPmiCalculator implements PmiCalculator
 {
 	private static final Logger	logger	= LoggerFactory.getLogger("fileLogger");
 
+	private Corpus				corpus;
 	private MongoOperations		mongoOperations;
 
-	public DefaultPmiCalculator(MongoOperations mongoOperations)
+	public DefaultPmiCalculator(Corpus corpus) throws UnknownHostException
 	{
-		this.mongoOperations = mongoOperations;
+		this.corpus = corpus;
+		this.mongoOperations = MongoProvider.getMongoProvider(corpus);
 	}
 
 	@Override
@@ -52,8 +56,8 @@ public class DefaultPmiCalculator implements PmiCalculator
 					"%WORD2%", word2);
 			String reduceFunction = getJsFileContent(new File("src/main/resources/no/hioa/sentiment/pmi/reduce.js"));
 
-			MapReduceResults<DistanceResult> results = mongoOperations.mapReduce(regexQuery, "review", mapFunction, reduceFunction,
-					DistanceResult.class);
+			MapReduceResults<DistanceResult> results = mongoOperations.mapReduce(regexQuery, corpus.getCollectionContentName(), mapFunction,
+					reduceFunction, DistanceResult.class);
 
 			Set<Long> distances = new HashSet<>();
 			for (DistanceResult result : results)
@@ -100,7 +104,8 @@ public class DefaultPmiCalculator implements PmiCalculator
 		{
 			logger.info("Word {} does not exists in lookup table", word);
 
-			long wordCount = mongoOperations.count(new Query().addCriteria(Criteria.where("content").regex("\\b" + word + "\\b", "i")), Review.class);
+			long wordCount = mongoOperations.count(new Query().addCriteria(Criteria.where("content").regex("\\b" + word + "\\b", "i")),
+					corpus.getCollectionContentClazz());
 			wordOccurence = new WordOccurence(word, wordCount);
 			mongoOperations.insert(wordOccurence);
 

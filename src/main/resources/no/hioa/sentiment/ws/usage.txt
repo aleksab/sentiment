@@ -1,0 +1,33 @@
+Short usage for webservice<br/>
+Method - Path - Description<br/>
+(GET) - <a href="/sentiment/ping">/sentiment/ping</a> - This is a simple check if alive method.<br/>
+(GET) - <a href="/sentiment/usage">/sentiment/usage</a> - This is the current page.<br/>
+(GET) - <a href="/sentiment/seed/positive">/sentiment/seed/positive</a> - This returns all positive seed words. These are used for SO-PMI calculations.<br/>
+(GET) - <a href="/sentiment/seed/negative">/sentiment/seed/negative</a> - This returns all negative seed words. These are used for SO-PMI calculations.<br/>
+(GET) - <a href="/sentiment/seed/candidate">/sentiment/seed/candidate</a> - This returns all candidate seed words. These are used for SO-PMI calculations.<br/>
+(POST) - /sentiment/pmi/occurence - This find occurence for a word in a corpus. Notice that this is a post request and requires a json body.<br/>
+Example of a request that you can send:<br>
+<pre>
+{
+corpus: "NEWSPAPER_ARTICLES",
+word: "perfekt",
+}
+</pre>
+(POST) - /sentiment/pmi/near - This does a near search between two words and a given distance. The number of occurences for both words in the corpus is returned.
+Notice that this is a post request and requires a json body.<br/>
+This method is quite slow the first time a new combination of words is called. Even though we use a mapreduce algorithm to loop through all the content there are still a hugh database to cover.<br/>
+The server is also quite slow so we might benefit to move it to a cluster so we can utilize Mongo and MapReduce much better. 
+Example of a request that you can send:<br>
+<pre>
+{
+corpus: "NEWSPAPER_ARTICLES",
+word1: "perfekt",
+word2: "deilig",
+maxDistance: "100"
+}
+</pre>
+(POST) - /sentiment/pmi/sopmi - Not supported by webservice yet.<br/>
+(POST) - /sentiment/pmi/candidatepmi - Not supported by webservice yet.<br/>
+<br/><br/>
+Tips: There are plenty of plugins for firefox (<a href="https://addons.mozilla.org/en-US/firefox/addon/restclient/">RESTClient</a>) and chrome where you can test REST calls quickly. I recommend using that for debugging purposes.<br/>
+I recommend going against movie review corpus when you are testing since newspaper corpus is quite slow.

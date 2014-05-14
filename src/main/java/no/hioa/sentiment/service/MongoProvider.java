@@ -22,8 +22,8 @@ public class MongoProvider
 		return new MongoTemplate(new SimpleMongoDbFactory(client, dbName));
 	}
 
-	public static MongoOperations getMongoProvider(String dbName) throws UnknownHostException
+	public static MongoOperations getMongoProvider(Corpus corpus) throws UnknownHostException
 	{
-		return new MongoTemplate(new SimpleMongoDbFactory(new MongoClient(), dbName));
+		return new MongoTemplate(new SimpleMongoDbFactory(new MongoClient(), corpus.getDbName()));
 	}
 }

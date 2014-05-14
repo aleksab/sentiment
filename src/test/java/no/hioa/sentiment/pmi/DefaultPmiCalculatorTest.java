@@ -3,7 +3,7 @@ package no.hioa.sentiment.pmi;
 import java.math.BigDecimal;
 import java.util.List;
 
-import no.hioa.sentiment.service.MongoProvider;
+import no.hioa.sentiment.service.Corpus;
 import no.hioa.sentiment.service.SeedProvider;
 
 import org.apache.log4j.PropertyConfigurator;
@@ -19,7 +19,7 @@ public class DefaultPmiCalculatorTest
 	public void setup() throws Exception
 	{
 		PropertyConfigurator.configure("log4j.properties");
-		pmi = new DefaultPmiCalculator(MongoProvider.getMongoProvider("filmweb"));
+		pmi = new DefaultPmiCalculator(Corpus.MOVIE_REVIEWS);
 	}
 
 	@Test

@@ -1,7 +1,15 @@
 package no.hioa.sentiment.ws;
 
 import static spark.Spark.get;
+import static spark.Spark.post;
 import static spark.Spark.setPort;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.net.UnknownHostException;
+import java.util.Scanner;
+
+import no.hioa.sentiment.pmi.DefaultPmiCalculator;
 import no.hioa.sentiment.service.SeedProvider;
 
 import org.apache.log4j.PropertyConfigurator;
@@ -17,7 +25,7 @@ import com.beust.jcommander.Parameter;
 
 public class SentimentWs
 {
-	private static final Logger	logger	= LoggerFactory.getLogger("fileLogger");
+	private static final Logger	logger	= LoggerFactory.getLogger("stdoutLogger");
 
 	@Parameter(names = "-port", description = "Webservice port")
 	private int					port	= 5300;
@@ -49,7 +57,16 @@ public class SentimentWs
 			}
 		});
 
-		get(new Route("/sentiment/seed/positive")
+		get(new Route("/sentiment/usage")
+		{
+			@Override
+			public Object handle(Request request, Response response)
+			{
+				return getFileContent(new File("src/main/resources/no/hioa/sentiment/ws/usage.txt"));
+			}
+		});
+
+		get(new JsonTransformer("/sentiment/seed/positive")
 		{
 			@Override
 			public Object handle(Request request, Response response)
@@ -58,7 +75,7 @@ public class SentimentWs
 			}
 		});
 
-		get(new Route("/sentiment/seed/negative")
+		get(new JsonTransformer("/sentiment/seed/negative")
 		{
 			@Override
 			public Object handle(Request request, Response response)
@@ -67,7 +84,7 @@ public class SentimentWs
 			}
 		});
 
-		get(new Route("/sentiment/seed/candidate")
+		get(new JsonTransformer("/sentiment/seed/candidate")
 		{
 			@Override
 			public Object handle(Request request, Response response)
@@ -76,7 +93,29 @@ public class SentimentWs
 			}
 		});
 
-		get(new Route("/sentiment/pmi/occurence")
+		post(new OccurenceWrapper("/sentiment/pmi/occurence")
+		{
+			@Override
+			public OccurenceResponse handle(OccurenceRequest request) throws UnknownHostException
+			{
+				DefaultPmiCalculator pmi = new DefaultPmiCalculator(request.getCorpus());
+				long occurence = pmi.findWordOccurence(request.getWord());
+				return new OccurenceResponse(request.getWord(), occurence);
+			}
+		});
+
+		post(new NearWrapper("/sentiment/pmi/near")
+		{
+			@Override
+			public NearResponse handle(NearRequest request) throws UnknownHostException
+			{
+				DefaultPmiCalculator pmi = new DefaultPmiCalculator(request.getCorpus());
+				long occurence = pmi.findWordDistance(request.getWord1(), request.getWord2(), request.getMaxDistance());
+				return new NearResponse(request.getWord1(), request.getWord2(), request.getMaxDistance(), occurence);
+			}
+		});
+
+		post(new JsonTransformer("/sentiment/pmi/sopmi")
 		{
 			@Override
 			public Object handle(Request request, Response response)
@@ -85,25 +124,7 @@ public class SentimentWs
 			}
 		});
 
-		get(new Route("/sentiment/pmi/near")
-		{
-			@Override
-			public Object handle(Request request, Response response)
-			{
-				return "NOT SUPPORTED";
-			}
-		});
-
-		get(new Route("/sentiment/pmi/sopmi")
-		{
-			@Override
-			public Object handle(Request request, Response response)
-			{
-				return "NOT SUPPORTED";
-			}
-		});
-
-		get(new Route("/sentiment/pmi/candidatepmi")
+		post(new JsonTransformer("/sentiment/pmi/candidatepmi")
 		{
 			@Override
 			public Object handle(Request request, Response response)
@@ -113,5 +134,25 @@ public class SentimentWs
 		});
 
 		logger.info("Server started");
+	}
+
+	private String getFileContent(File file)
+	{
+		StringBuffer buffer = new StringBuffer();
+
+		try (Scanner scanner = new Scanner(new FileInputStream(file), "ISO-8859-1"))
+		{
+			while (scanner.hasNextLine())
+			{
+				String input = scanner.nextLine();
+				buffer.append(input + "\n");
+			}
+		}
+		catch (Exception ex)
+		{
+			logger.error("Could not read content for file " + file.getAbsolutePath(), ex);
+		}
+
+		return buffer.toString();
 	}
 }
