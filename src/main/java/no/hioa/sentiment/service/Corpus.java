@@ -1,4 +1,4 @@
-package no.hioa.sentiment.pmi;
+package no.hioa.sentiment.service;
 
 public enum Corpus
 {

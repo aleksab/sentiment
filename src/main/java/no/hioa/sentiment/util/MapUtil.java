@@ -1,4 +1,4 @@
-package no.hioa.sentiment.filmweb;
+package no.hioa.sentiment.util;
 
 import java.util.Collections;
 import java.util.Comparator;

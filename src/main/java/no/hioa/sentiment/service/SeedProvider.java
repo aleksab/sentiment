@@ -11,16 +11,21 @@ import org.slf4j.LoggerFactory;
 
 public class SeedProvider
 {
-	private static final Logger logger = LoggerFactory.getLogger("fileLogger");
+	private static final Logger	logger	= LoggerFactory.getLogger("fileLogger");
+
+	public static List<String> getCandidateWords()
+	{
+		return getFileContent(new File("src/main/resources/no/hioa/sentiment/service/candidate.txt"));
+	}
 
 	public static List<String> getPositiveWords()
 	{
-		return getFileContent(new File("src/main/resources/no/hioa/sentiment/filmweb/positive.txt"));
+		return getFileContent(new File("src/main/resources/no/hioa/sentiment/service/positive.txt"));
 	}
 
 	public static List<String> getNegativeWords()
 	{
-		return getFileContent(new File("src/main/resources/no/hioa/sentiment/filmweb/negative.txt"));
+		return getFileContent(new File("src/main/resources/no/hioa/sentiment/service/negative.txt"));
 	}
 
 	private static List<String> getFileContent(File file)
@@ -34,7 +39,8 @@ public class SeedProvider
 				String input = scanner.nextLine().toLowerCase();
 				words.add(input);
 			}
-		} catch (Exception ex)
+		}
+		catch (Exception ex)
 		{
 			logger.error("Could not read content for file " + file.getAbsolutePath(), ex);
 		}

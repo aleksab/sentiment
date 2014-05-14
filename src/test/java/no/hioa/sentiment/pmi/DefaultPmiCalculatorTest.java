@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import no.hioa.sentiment.service.MongoProvider;
+import no.hioa.sentiment.service.SeedProvider;
 
 import org.apache.log4j.PropertyConfigurator;
 import org.junit.Assert;
@@ -22,26 +23,10 @@ public class DefaultPmiCalculatorTest
 	}
 
 	@Test
-	public void testGetPositiveWords() throws Exception
-	{
-		List<String> words = pmi.getPositiveWords();
-		System.out.println(words);
-		Assert.assertEquals(15, words.size());
-	}
-
-	@Test
-	public void testGetNegativeWords() throws Exception
-	{
-		List<String> words = pmi.getNegativeWords();
-		System.out.println(words);
-		Assert.assertEquals(18, words.size());
-	}
-
-	@Test
 	public void testCalculateSoPmi() throws Exception
 	{
-		List<String> pWords = pmi.getPositiveWords();
-		List<String> nWords = pmi.getNegativeWords();
+		List<String> pWords = SeedProvider.getPositiveWords();
+		List<String> nWords = SeedProvider.getNegativeWords();
 
 		BigDecimal result = pmi.calculateSoPmi("fantastisk", pWords, nWords, 10);
 		Assert.assertEquals(new BigDecimal("1.0429525").floatValue(), result.floatValue(), 0);
@@ -50,8 +35,8 @@ public class DefaultPmiCalculatorTest
 	@Test
 	public void testCalculateSoPmi2() throws Exception
 	{
-		List<String> pWords = pmi.getPositiveWords();
-		List<String> nWords = pmi.getNegativeWords();
+		List<String> pWords = SeedProvider.getPositiveWords();
+		List<String> nWords = SeedProvider.getNegativeWords();
 
 		BigDecimal result = pmi.calculateSoPmi("forferdelig", pWords, nWords, 10);
 		Assert.assertEquals(new BigDecimal("0").floatValue(), result.floatValue(), 0);
@@ -60,13 +45,14 @@ public class DefaultPmiCalculatorTest
 	@Test
 	public void testFindWordDistance() throws Exception
 	{
-		Assert.assertEquals(2, pmi.findWordDistance("super", "film", 10));
+		Assert.assertEquals(2, pmi.findWordDistance("vakker", "deilig", 100));
 	}
 
 	@Test
 	public void testFindWordDistance2() throws Exception
 	{
 		Assert.assertEquals(1, pmi.findWordDistance("super", "deilig", 100));
+		Assert.assertEquals(1, pmi.findWordDistance("deilig", "super", 100));
 	}
 
 	@Test

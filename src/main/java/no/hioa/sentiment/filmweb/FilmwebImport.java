@@ -2,26 +2,21 @@ package no.hioa.sentiment.filmweb;
 
 import java.io.File;
 import java.net.UnknownHostException;
-import java.util.LinkedList;
-import java.util.List;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Unmarshaller;
+
+import no.hioa.sentiment.service.MongoProvider;
 
 import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.mongodb.core.MongoOperations;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.SimpleMongoDbFactory;
 import org.springframework.data.mongodb.core.query.BasicQuery;
 import org.springframework.data.mongodb.core.query.Query;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
-import com.mongodb.MongoClient;
-import com.mongodb.MongoCredential;
-import com.mongodb.ServerAddress;
 
 public class FilmwebImport
 {
@@ -60,10 +55,7 @@ public class FilmwebImport
 	public FilmwebImport(String[] args) throws UnknownHostException
 	{
 		JCommander commander = new JCommander(this, args);
-		List<MongoCredential> credentialsList = new LinkedList<>();
-		credentialsList.add(MongoCredential.createMongoCRCredential(mongoUsername, mongoAuthDb, mongoPassword.toCharArray()));
-		MongoClient client = new MongoClient(new ServerAddress(mongoHost), credentialsList);
-		mongoOperations = new MongoTemplate(new SimpleMongoDbFactory(client, dbName));
+		mongoOperations = MongoProvider.getMongoProvider(mongoHost, dbName, mongoUsername, mongoPassword);
 
 		if (printStats)
 			printStats();
