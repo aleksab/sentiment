@@ -105,7 +105,8 @@ public class DefaultPmiCalculator implements PmiCalculator
 		{
 			logger.info("Word {} does not exists in lookup table", word);
 
-			long wordCount = mongoOperations.count(new Query().addCriteria(Criteria.where("content").regex("\\b" + word + "\\b", "i")),
+			BasicQuery textQuery = new BasicQuery("{ $text: { $search: \"'" + word +"''\" } }");
+			long wordCount = mongoOperations.count(textQuery, //new Query().addCriteria(Criteria.where("content").regex("\\b" + word + "\\b", "i")),
 					corpus.getCollectionContentClazz());
 			wordOccurence = new WordOccurence(word, wordCount);
 			mongoOperations.insert(wordOccurence);

@@ -21,7 +21,22 @@ public class DefaultPmiCalculatorTest
 	public void setup() throws Exception
 	{
 		PropertyConfigurator.configure("log4j.properties");
-		pmi = new DefaultPmiCalculator(Corpus.MOVIE_REVIEWS);
+		pmi = new DefaultPmiCalculator(Corpus.NEWSPAPER_ARTICLES);
+	}
+
+	@Test
+	public void testFindWordOccurenceSpeed() throws Exception
+	{
+		MongoOperations mongoOperations = MongoProvider.getMongoProvider(Corpus.NEWSPAPER_ARTICLES);
+		mongoOperations.dropCollection(WordDistance.class);
+		mongoOperations.dropCollection(WordOccurence.class);
+		
+		long startTime = System.currentTimeMillis();
+		pmi.findWordOccurence("super");
+		long elapsedTime = System.currentTimeMillis() - startTime;
+		System.out.println("Seconds elapsed: " + elapsedTime / 1000);
+		
+		// 73, 73
 	}
 
 	@Test
@@ -35,14 +50,13 @@ public class DefaultPmiCalculatorTest
 		mongoOperations.dropCollection(WordOccurence.class);
 
 		long startTime = System.currentTimeMillis();
-		BigDecimal result = pmi.calculateSoPmi("fantastisk", pWords, nWords, 10);
-		Assert.assertEquals(new BigDecimal("1.0429525").floatValue(), result.floatValue(), 0);
+		pmi.calculateSoPmi("fantastisk", pWords, nWords, 10);
 		long elapsedTime = System.currentTimeMillis() - startTime;
 		// movie
 		// 146, 145, 147 (before index)
 		// 146, 145, 147 (after index)
 		// 5, 5, 5 (after index and text search)
-		
+
 		// newspaper
 		// (before index)
 		// (before index but with text search)
