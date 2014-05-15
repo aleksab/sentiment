@@ -24,15 +24,21 @@ import org.slf4j.LoggerFactory;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 
-public class CandidatePmi
+public class WordRangePmi
 {
 	private static final Logger	consoleLogger	= LoggerFactory.getLogger("fileLogger");
 
 	@Parameter(names = "-db", description = "Mongo database to use", required = true)
 	private String				dbName;
 
-	@Parameter(names = "-max", description = "Max distance between words")
-	private int					maxDistance		= 10;
+	@Parameter(names = "-start", description = "Start distance between words")
+	private int					startDistance	= 1;
+
+	@Parameter(names = "-end", description = "End distance between words")
+	private int					endDistance		= 1000;
+
+	@Parameter(names = "-word", description = "Word to check range for", required = true)
+	private String				word;
 
 	private PmiCalculator		pmiCalculator;
 
@@ -40,48 +46,59 @@ public class CandidatePmi
 	{
 		PropertyConfigurator.configure("log4j.properties");
 
-		new CandidatePmi(args);
+		new WordRangePmi(args);
 	}
 
-	public CandidatePmi(String[] args) throws UnknownHostException
+	public WordRangePmi(String[] args) throws UnknownHostException
 	{
 		new JCommander(this, args);
 		pmiCalculator = new DefaultPmiCalculator(Corpus.MOVIE_REVIEWS);
 
-		calculateCandidatePmi(new File("target/"), maxDistance);
+		calculateWordRangePmi(new File("target/"), startDistance, endDistance, word);
 	}
 
 	/**
-	 * Calculate SO-PMI for all candidate words.
+	 * Calculate SO-PMI for a range of distances for a given word.
 	 * 
 	 * @param outputDir
-	 * @param filname
-	 * @param maxDistance
+	 * @param startDistance
+	 * @param endDistance
+	 * @param word
 	 */
-	private void calculateCandidatePmi(File outputDir, int maxDistance)
+	private void calculateWordRangePmi(File outputDir, int startDistance, int endDistance, String word)
 	{
-		List<String> candidates = SeedProvider.getCandidateWords();
 		List<String> pWords = SeedProvider.getPositiveWords();
 		List<String> nWords = SeedProvider.getNegativeWords();
-		Map<String, BigDecimal> soPmi = new HashMap<>();
+		Map<Integer, BigDecimal> soPmi = new HashMap<>();
 
-		for (String candidate : candidates)
+		int limit = startDistance;
+		while (limit <= endDistance)
 		{
-			consoleLogger.info("Calculating SO-PMI for candidate word {} with limit {}", candidate, maxDistance);
-			soPmi.put(candidate, pmiCalculator.calculateSoPmi(candidate, pWords, nWords, maxDistance));
+			consoleLogger.info("Calculating SO-PMI for word {} with limit {}", word, limit);
+			soPmi.put(limit, pmiCalculator.calculateSoPmi(word, pWords, nWords, limit));
+
+			if (limit < 10)
+				limit++;
+			else if (limit < 100)
+				limit += 10;
+			else if (limit < 1000)
+				limit += 50;
+			else
+				break;
 		}
 
-		soPmi = MapUtil.sortByValue(soPmi);
+		soPmi = MapUtil.sortByKey(soPmi);
 
-		String fileName = "so-pmi-" + maxDistance + ".txt";
+		String fileName = "so-pmi-range-" + startDistance + "-" + endDistance + "-" + word + ".txt";
 		Path newFile = Paths.get(outputDir.getAbsolutePath(), fileName);
 		consoleLogger.info("Saving result to file " + newFile);
 		try (BufferedWriter writer = Files.newBufferedWriter(newFile, Charset.defaultCharset()))
 		{
-			for (String word : soPmi.keySet())
+			writer.append("SO-PMI range for " + word + "\n");
+			for (Integer distance : soPmi.keySet())
 			{
-				writer.append("Word " + word + " has SO-PMI of " + soPmi.get(word) + "\n");
-				consoleLogger.info("Word {} has SO-PMI of {}", word, soPmi.get(word));
+				writer.append(distance + "," + soPmi.get(distance) + "\n");
+				consoleLogger.info("Word {} has SO-PMI of {} for distance {}", word, soPmi.get(distance), distance);
 			}
 		}
 		catch (IOException ex)

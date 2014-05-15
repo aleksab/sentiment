@@ -20,8 +20,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.mapreduce.MapReduceResults;
 import org.springframework.data.mongodb.core.query.BasicQuery;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 
 public class DefaultPmiCalculator implements PmiCalculator
 {
@@ -35,7 +33,7 @@ public class DefaultPmiCalculator implements PmiCalculator
 		this.corpus = corpus;
 		this.mongoOperations = MongoProvider.getMongoProvider(corpus);
 	}
-	
+
 	@Override
 	public long findWordDistance(String word1, String word2, long maxDistance)
 	{
@@ -50,9 +48,7 @@ public class DefaultPmiCalculator implements PmiCalculator
 		{
 			logger.info("Word {} and {} with max distance of {} does not exists in lookup table", word1, word2, maxDistance);
 
-			BasicQuery textQuery = new BasicQuery("{ $text: { $search: \"'" + word1 +"' '" + word2 + "'\" } }");
-			Query regexQuery = new Query().addCriteria(Criteria.where("content").regex(
-					"(\\b" + word1 + "\\b)(.*)(\\b" + word2 + "\\b)|(\\b" + word2 + "\\b)(.*)(\\b" + word1 + "\\b)", "isg"));
+			BasicQuery textQuery = new BasicQuery("{ $text: { $search: \"'" + word1 + "' '" + word2 + "'\" } }");
 			String mapFunction = getJsFileContent(new File("src/main/resources/no/hioa/sentiment/pmi/map.js")).replaceAll("%WORD1%", word1).replaceAll(
 					"%WORD2%", word2);
 			String reduceFunction = getJsFileContent(new File("src/main/resources/no/hioa/sentiment/pmi/reduce.js"));
@@ -90,7 +86,7 @@ public class DefaultPmiCalculator implements PmiCalculator
 		logger.info("Word {} and {} have {} occurences within distance of {}", word1, word2, occurrences, maxDistance);
 
 		return occurrences;
-	}	
+	}
 
 	@Override
 	public long findWordOccurence(String word)
@@ -105,9 +101,8 @@ public class DefaultPmiCalculator implements PmiCalculator
 		{
 			logger.info("Word {} does not exists in lookup table", word);
 
-			BasicQuery textQuery = new BasicQuery("{ $text: { $search: \"'" + word +"''\" } }");
-			long wordCount = mongoOperations.count(textQuery, //new Query().addCriteria(Criteria.where("content").regex("\\b" + word + "\\b", "i")),
-					corpus.getCollectionContentClazz());
+			BasicQuery textQuery = new BasicQuery("{ $text: { $search: '" + word + "' } }");
+			long wordCount = mongoOperations.count(textQuery, corpus.getCollectionContentClazz());
 			wordOccurence = new WordOccurence(word, wordCount);
 			mongoOperations.insert(wordOccurence);
 

@@ -3,6 +3,7 @@ package no.hioa.sentiment.pmi;
 import java.math.BigDecimal;
 import java.util.List;
 
+import no.hioa.sentiment.filmweb.Review;
 import no.hioa.sentiment.service.Corpus;
 import no.hioa.sentiment.service.MongoProvider;
 import no.hioa.sentiment.service.SeedProvider;
@@ -10,58 +11,22 @@ import no.hioa.sentiment.service.SeedProvider;
 import org.apache.log4j.PropertyConfigurator;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.data.mongodb.core.MongoOperations;
+import org.springframework.data.mongodb.core.query.BasicQuery;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 
 public class DefaultPmiCalculatorTest
 {
-	private DefaultPmiCalculator pmi = null;
+	private DefaultPmiCalculator	pmi	= null;
 
 	@Before
 	public void setup() throws Exception
 	{
 		PropertyConfigurator.configure("log4j.properties");
-		pmi = new DefaultPmiCalculator(Corpus.NEWSPAPER_ARTICLES);
-	}
-
-	@Test
-	public void testFindWordOccurenceSpeed() throws Exception
-	{
-		MongoOperations mongoOperations = MongoProvider.getMongoProvider(Corpus.NEWSPAPER_ARTICLES);
-		mongoOperations.dropCollection(WordDistance.class);
-		mongoOperations.dropCollection(WordOccurence.class);
-		
-		long startTime = System.currentTimeMillis();
-		pmi.findWordOccurence("super");
-		long elapsedTime = System.currentTimeMillis() - startTime;
-		System.out.println("Seconds elapsed: " + elapsedTime / 1000);
-		
-		// 73, 73
-	}
-
-	@Test
-	public void testCalculateSoPmiSpeed() throws Exception
-	{
-		List<String> pWords = SeedProvider.getPositiveWords();
-		List<String> nWords = SeedProvider.getNegativeWords();
-
-		MongoOperations mongoOperations = MongoProvider.getMongoProvider(Corpus.MOVIE_REVIEWS);
-		mongoOperations.dropCollection(WordDistance.class);
-		mongoOperations.dropCollection(WordOccurence.class);
-
-		long startTime = System.currentTimeMillis();
-		pmi.calculateSoPmi("fantastisk", pWords, nWords, 10);
-		long elapsedTime = System.currentTimeMillis() - startTime;
-		// movie
-		// 146, 145, 147 (before index)
-		// 146, 145, 147 (after index)
-		// 5, 5, 5 (after index and text search)
-
-		// newspaper
-		// (before index)
-		// (before index but with text search)
-		// (after index and with text search)
-		System.out.println("Seconds elapsed: " + elapsedTime / 1000);
+		pmi = new DefaultPmiCalculator(Corpus.MOVIE_REVIEWS);
 	}
 
 	@Test
@@ -71,7 +36,7 @@ public class DefaultPmiCalculatorTest
 		List<String> nWords = SeedProvider.getNegativeWords();
 
 		BigDecimal result = pmi.calculateSoPmi("fantastisk", pWords, nWords, 10);
-		Assert.assertEquals(new BigDecimal("1.0429525").floatValue(), result.floatValue(), 0);
+		Assert.assertEquals(new BigDecimal("0.6322682").floatValue(), result.floatValue(), 0);
 	}
 
 	@Test
@@ -100,12 +65,27 @@ public class DefaultPmiCalculatorTest
 	@Test
 	public void testFindWordOccurence() throws Exception
 	{
-		Assert.assertEquals(52, pmi.findWordOccurence("super"));
+		Assert.assertEquals(45, pmi.findWordOccurence("super"));
 	}
 
 	@Test
 	public void testFindWordOccurence2() throws Exception
 	{
-		Assert.assertEquals(140, pmi.findWordOccurence("deilig"));
+		Assert.assertEquals(155, pmi.findWordOccurence("deilig"));
+	}
+
+	@Test
+	@Ignore("Vil nok match because of stemmed words")
+	public void testFindWordOccurence3() throws Exception
+	{
+		String word = "deilig";
+		MongoOperations mongoOperations = MongoProvider.getMongoProvider(Corpus.MOVIE_REVIEWS);
+		BasicQuery textQuery = new BasicQuery("{ $text: { $search: '" + word + "' } }");
+
+		List<Review> reviews1 = mongoOperations.find(textQuery, Review.class);
+		List<Review> reviews2 = mongoOperations.find(new Query().addCriteria(Criteria.where("content").regex("\\b" + word + "\\b", "i")),
+				Review.class);
+
+		Assert.assertEquals(reviews1.size(), reviews2.size());
 	}
 }
