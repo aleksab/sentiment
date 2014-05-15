@@ -35,7 +35,7 @@ public class DefaultPmiCalculator implements PmiCalculator
 		this.corpus = corpus;
 		this.mongoOperations = MongoProvider.getMongoProvider(corpus);
 	}
-
+	
 	@Override
 	public long findWordDistance(String word1, String word2, long maxDistance)
 	{
@@ -50,13 +50,14 @@ public class DefaultPmiCalculator implements PmiCalculator
 		{
 			logger.info("Word {} and {} with max distance of {} does not exists in lookup table", word1, word2, maxDistance);
 
+			BasicQuery textQuery = new BasicQuery("{ $text: { $search: \"'" + word1 +"' '" + word2 + "'\" } }");
 			Query regexQuery = new Query().addCriteria(Criteria.where("content").regex(
 					"(\\b" + word1 + "\\b)(.*)(\\b" + word2 + "\\b)|(\\b" + word2 + "\\b)(.*)(\\b" + word1 + "\\b)", "isg"));
 			String mapFunction = getJsFileContent(new File("src/main/resources/no/hioa/sentiment/pmi/map.js")).replaceAll("%WORD1%", word1).replaceAll(
 					"%WORD2%", word2);
 			String reduceFunction = getJsFileContent(new File("src/main/resources/no/hioa/sentiment/pmi/reduce.js"));
 
-			MapReduceResults<DistanceResult> results = mongoOperations.mapReduce(regexQuery, corpus.getCollectionContentName(), mapFunction,
+			MapReduceResults<DistanceResult> results = mongoOperations.mapReduce(textQuery, corpus.getCollectionContentName(), mapFunction,
 					reduceFunction, DistanceResult.class);
 
 			Set<Long> distances = new HashSet<>();
@@ -89,7 +90,7 @@ public class DefaultPmiCalculator implements PmiCalculator
 		logger.info("Word {} and {} have {} occurences within distance of {}", word1, word2, occurrences, maxDistance);
 
 		return occurrences;
-	}
+	}	
 
 	@Override
 	public long findWordOccurence(String word)

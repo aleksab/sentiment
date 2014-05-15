@@ -116,6 +116,8 @@ public class FilmwebImport
 				mongoOperations.insert(internalReview);
 			}
 		}
+		
+		// TODO: Add code for adding index to content
 
 		return movies.getMovies().size();
 	}

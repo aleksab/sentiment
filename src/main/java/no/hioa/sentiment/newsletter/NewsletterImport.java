@@ -119,6 +119,8 @@ public class NewsletterImport
 				mongoOperations.insert(article);
 			}
 		}
+		
+		// TODO: Add code for adding index to content
 
 		return totalArticles;
 	}
@@ -164,6 +166,8 @@ public class NewsletterImport
 				}
 			}
 		}
+		
+		// TODO: Add code for adding index to content
 
 		return totalArticles;
 	}
