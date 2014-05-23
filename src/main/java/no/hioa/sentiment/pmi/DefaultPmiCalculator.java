@@ -35,6 +35,48 @@ public class DefaultPmiCalculator implements PmiCalculator
 	}
 
 	@Override
+	public BigDecimal calculateSoPmi(String word, List<String> pWords, List<String> nWords, int maxDistance)
+	{
+		BigDecimal totalHitsNearPositive = BigDecimal.ZERO;
+		BigDecimal totalHitsNearNegative = BigDecimal.ZERO;
+		BigDecimal totalHitsPositive = BigDecimal.ZERO;
+		BigDecimal totalHitsNegative = BigDecimal.ZERO;
+
+		for (String positive : pWords)
+		{
+			totalHitsNearPositive = totalHitsNearPositive.add(new BigDecimal(findWordDistance(word, positive, maxDistance)));
+			totalHitsPositive = totalHitsPositive.add(new BigDecimal(findWordOccurence(positive)));
+		}
+
+		for (String negative : nWords)
+		{
+			totalHitsNearNegative = totalHitsNearNegative.add(new BigDecimal(findWordDistance(word, negative, maxDistance)));
+			totalHitsNegative = totalHitsNegative.add(new BigDecimal(findWordOccurence(negative)));
+		}
+
+		logger.info("Total hits near positive words are {}", totalHitsNearPositive);
+		logger.info("Total hits near negative words are {}", totalHitsNearNegative);
+		logger.info("Total hits of positive words are {}", totalHitsPositive);
+		logger.info("Total hits of negative words are {}", totalHitsNegative);
+
+		BigDecimal dividend = totalHitsNearPositive.multiply(totalHitsPositive).setScale(5);
+		if (dividend.compareTo(BigDecimal.ZERO) == 0)
+			dividend = new BigDecimal("0.01");
+
+		BigDecimal divisor = totalHitsNearNegative.multiply(totalHitsNegative).setScale(5);
+		if (divisor.compareTo(BigDecimal.ZERO) == 0)
+			divisor = new BigDecimal("0.01");
+
+		BigDecimal result = dividend.divide(divisor, RoundingMode.CEILING);
+
+		// TODO: this is not ideal and we might lose precision
+		result = new BigDecimal(Math.log(result.floatValue()) / Math.log(2));
+		logger.info("SO-PMI for word {} is {} with maxDistance {}", word, result, maxDistance);
+
+		return result;
+	}
+
+	@Override
 	public long findWordDistance(String word1, String word2, long maxDistance)
 	{
 		if (!mongoOperations.collectionExists(WordDistance.class))
@@ -112,48 +154,6 @@ public class DefaultPmiCalculator implements PmiCalculator
 			logger.info("Word {} found in lookup table with occurence {}", word, wordOccurence.getOccurence());
 
 		return wordOccurence.getOccurence();
-	}
-
-	@Override
-	public BigDecimal calculateSoPmi(String word, List<String> pWords, List<String> nWords, int maxDistance)
-	{
-		BigDecimal totalHitsNearPositive = BigDecimal.ZERO;
-		BigDecimal totalHitsNearNegative = BigDecimal.ZERO;
-		BigDecimal totalHitsPositive = BigDecimal.ZERO;
-		BigDecimal totalHitsNegative = BigDecimal.ZERO;
-
-		for (String positive : pWords)
-		{
-			totalHitsNearPositive = totalHitsNearPositive.add(new BigDecimal(findWordDistance(word, positive, maxDistance)));
-			totalHitsPositive = totalHitsPositive.add(new BigDecimal(findWordOccurence(positive)));
-		}
-
-		for (String negative : nWords)
-		{
-			totalHitsNearNegative = totalHitsNearNegative.add(new BigDecimal(findWordDistance(word, negative, maxDistance)));
-			totalHitsNegative = totalHitsNegative.add(new BigDecimal(findWordOccurence(negative)));
-		}
-
-		logger.info("Total hits near positive words are {}", totalHitsNearPositive);
-		logger.info("Total hits near negative words are {}", totalHitsNearNegative);
-		logger.info("Total hits of positive words are {}", totalHitsPositive);
-		logger.info("Total hits of negative words are {}", totalHitsNegative);
-
-		BigDecimal dividend = totalHitsNearPositive.multiply(totalHitsPositive).setScale(5);
-		if (dividend.compareTo(BigDecimal.ZERO) == 0)
-			dividend = new BigDecimal("0.01");
-
-		BigDecimal divisor = totalHitsNearNegative.multiply(totalHitsNegative).setScale(5);
-		if (divisor.compareTo(BigDecimal.ZERO) == 0)
-			divisor = new BigDecimal("0.01");
-
-		BigDecimal result = dividend.divide(divisor, RoundingMode.CEILING);
-
-		// TODO: this is not ideal and we might lose precision
-		result = new BigDecimal(Math.log(result.floatValue()) / Math.log(2));
-		logger.info("SO-PMI for word {} is {} with maxDistance {}", word, result, maxDistance);
-
-		return result;
 	}
 
 	private String getJsFileContent(File file)

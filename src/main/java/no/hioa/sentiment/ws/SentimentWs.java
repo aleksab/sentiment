@@ -9,7 +9,11 @@ import java.io.FileInputStream;
 import java.net.UnknownHostException;
 import java.util.Scanner;
 
+import no.hioa.sentiment.filmweb.FilmwebData;
+import no.hioa.sentiment.filmweb.Review;
 import no.hioa.sentiment.pmi.DefaultPmiCalculator;
+import no.hioa.sentiment.score.DefaultSentimentScore;
+import no.hioa.sentiment.service.Corpus;
 import no.hioa.sentiment.service.SeedProvider;
 
 import org.apache.log4j.PropertyConfigurator;
@@ -130,6 +134,41 @@ public class SentimentWs
 			public Object handle(Request request, Response response)
 			{
 				return "NOT SUPPORTED";
+			}
+		});
+
+		post(new SentimentScoreWrapper("/sentiment/score")
+		{
+			@Override
+			public SentimentScoreResponse handle(SentimentScoreRequest request) throws UnknownHostException
+			{
+				DefaultSentimentScore score = new DefaultSentimentScore(Corpus.MOVIE_REVIEWS);
+				return new SentimentScoreResponse(score.getSentimentScore(request.getSentimentList()));
+			}
+		});
+
+		get(new JsonTransformer("/filmweb/review/:id")
+		{
+			@Override
+			public Object handle(Request request, Response response)
+			{
+				String id = request.params("id");
+				if (id == null || id.length() == 0)
+					return "Invalid id";
+
+				try
+				{
+					Review review = new FilmwebData().getReview(id);
+					if (review == null)
+						return "Could not find review by id " + id;
+					else
+						return review;
+				}
+				catch (UnknownHostException ex)
+				{
+					logger.error("Unknown error", ex);
+					return "Could not connect to database";
+				}
 			}
 		});
 

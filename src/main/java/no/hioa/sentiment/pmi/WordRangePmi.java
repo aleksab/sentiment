@@ -17,6 +17,7 @@ import no.hioa.sentiment.service.Corpus;
 import no.hioa.sentiment.service.SeedProvider;
 import no.hioa.sentiment.util.MapUtil;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +55,81 @@ public class WordRangePmi
 		new JCommander(this, args);
 		pmiCalculator = new DefaultPmiCalculator(Corpus.MOVIE_REVIEWS);
 
-		calculateWordRangePmi(new File("target/"), startDistance, endDistance, word);
+		// calculateWordRangePmi(new File("target/"), startDistance, endDistance, word);
+		calculateCandidateRangePmi(new File("target/"), startDistance, endDistance);
+	}
+
+	private void calculateCandidateRangePmi(File outputDir, int startDistance, int endDistance)
+	{
+		List<String> candidates = SeedProvider.getCandidateWords();		
+		List<String> pWords = SeedProvider.getPositiveWords();
+		List<String> nWords = SeedProvider.getNegativeWords();
+
+		String fileName = "so-pmi-range-" + startDistance + "-" + endDistance + "-all.txt";
+		Path newFile = Paths.get(outputDir.getAbsolutePath(), fileName);
+		consoleLogger.info("Saving result to file " + newFile);
+
+		try (BufferedWriter writer = Files.newBufferedWriter(newFile, Charset.defaultCharset()))
+		{
+			// write header
+			writer.append("SO-PMI range for all candidate words\n");
+			String buffer = "Range,";
+			int limit = startDistance;
+			while (limit <= endDistance)
+			{
+				buffer += limit + ",";
+
+				if (limit < 10)
+					limit++;
+				else if (limit < 100)
+					limit += 10;
+				else if (limit < 1000)
+					limit += 50;
+				else
+					break;
+			}
+
+			buffer = StringUtils.substringBeforeLast(buffer, ",");
+			writer.append(buffer + "\n");
+
+			for (String candidate : candidates)
+			{
+				Map<Integer, BigDecimal> soPmi = new HashMap<>();
+
+				limit = startDistance;
+				while (limit <= endDistance)
+				{
+					consoleLogger.info("Calculating SO-PMI for word {} with limit {}", candidate, limit);
+					soPmi.put(limit, pmiCalculator.calculateSoPmi(candidate, pWords, nWords, limit));
+
+					if (limit < 10)
+						limit++;
+					else if (limit < 100)
+						limit += 10;
+					else if (limit < 1000)
+						limit += 50;
+					else
+						break;
+				}
+
+				soPmi = MapUtil.sortByKey(soPmi);
+
+				buffer = candidate + ",";
+				for (Integer distance : soPmi.keySet())
+				{
+					buffer += soPmi.get(distance) + ",";
+				}
+
+				buffer = StringUtils.substringBeforeLast(buffer, ",");
+				writer.append(buffer + "\n");
+
+				consoleLogger.info("Word {} has SO-PMI range", candidate, buffer);
+			}
+		}
+		catch (IOException ex)
+		{
+			consoleLogger.error("Could not save SO-PMI to file " + newFile, ex);
+		}
 	}
 
 	/**

@@ -20,12 +20,12 @@ public class SeedProvider
 
 	public static List<String> getPositiveWords()
 	{
-		return getFileContent(new File("src/main/resources/no/hioa/sentiment/service/positive.txt"));
+		return getFileContent(new File("src/main/resources/no/hioa/sentiment/service/positive2.txt"));
 	}
 
 	public static List<String> getNegativeWords()
 	{
-		return getFileContent(new File("src/main/resources/no/hioa/sentiment/service/negative.txt"));
+		return getFileContent(new File("src/main/resources/no/hioa/sentiment/service/negative2.txt"));
 	}
 
 	private static List<String> getFileContent(File file)

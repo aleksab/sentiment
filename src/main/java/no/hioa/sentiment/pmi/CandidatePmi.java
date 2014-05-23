@@ -32,7 +32,7 @@ public class CandidatePmi
 	private String				dbName;
 
 	@Parameter(names = "-max", description = "Max distance between words")
-	private int					maxDistance		= 10;
+	private int					maxDistance		= 100;
 
 	private PmiCalculator		pmiCalculator;
 
@@ -46,7 +46,7 @@ public class CandidatePmi
 	public CandidatePmi(String[] args) throws UnknownHostException
 	{
 		new JCommander(this, args);
-		pmiCalculator = new DefaultPmiCalculator(Corpus.MOVIE_REVIEWS);
+		pmiCalculator = new DefaultPmiCalculator(Corpus.NEWSPAPER_ARTICLES);
 
 		calculateCandidatePmi(new File("target/"), maxDistance);
 	}
