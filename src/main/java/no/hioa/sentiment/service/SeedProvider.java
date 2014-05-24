@@ -27,6 +27,11 @@ public class SeedProvider
 	{
 		return getFileContent(new File("src/main/resources/no/hioa/sentiment/service/negative2.txt"));
 	}
+	
+	public static List<String> getStopWords()
+	{
+		return getFileContent(new File("src/main/resources/no/hioa/sentiment/service/stop-words-norwegian.txt"));
+	}
 
 	private static List<String> getFileContent(File file)
 	{
