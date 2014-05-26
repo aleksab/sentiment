@@ -10,7 +10,7 @@ public class SentimentWord
 	public SentimentWord(String word, BigDecimal rating)
 	{
 		super();
-		this.word = word;
+		this.word = word.toLowerCase();
 		this.rating = rating;
 	}
 
@@ -21,7 +21,7 @@ public class SentimentWord
 
 	public void setWord(String word)
 	{
-		this.word = word;
+		this.word = word.toLowerCase();
 	}
 
 	public BigDecimal getRating()

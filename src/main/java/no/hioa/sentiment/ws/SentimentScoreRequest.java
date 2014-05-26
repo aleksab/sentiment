@@ -11,7 +11,8 @@ import org.apache.commons.lang.builder.ToStringStyle;
 
 public class SentimentScoreRequest implements RequestValidator
 {
-	private List<SentimentWord>	sentimentList;
+	private List<SentimentWord> sentimentList;
+	private List<String> shifterList;
 
 	public List<SentimentWord> getSentimentList()
 	{
@@ -21,6 +22,16 @@ public class SentimentScoreRequest implements RequestValidator
 	public void setSentimentList(List<SentimentWord> sentimentList)
 	{
 		this.sentimentList = sentimentList;
+	}
+
+	public List<String> getShifterList()
+	{
+		return shifterList;
+	}
+
+	public void setShifterList(List<String> shifterList)
+	{
+		this.shifterList = shifterList;
 	}
 
 	@Override

@@ -19,8 +19,8 @@ import java.util.Scanner;
 import no.hioa.sentiment.service.Corpus;
 import no.hioa.sentiment.service.MongoProvider;
 import no.hioa.sentiment.util.MapUtil;
+import no.hioa.sentiment.util.WordUtil;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,9 +102,8 @@ public class NewsletterData
 				logger.info("Could not get correct number of articles for page ({}, {}). Only {} returned", page, pageSize, articles.getSize());
 
 			for (Article article : articles)
-			{
-				String content = article.getContent().replaceAll("[^a-zA-ZøæåØÆÅ\\s]", " ");
-				String[] words = StringUtils.split(content, " ");
+			{				
+				String[] words = WordUtil.getWords(article.getContent());
 
 				if (words.length < 50)
 					logger.warn("Article {} has less than 50 words: {} (before replace: {})", article.getId(), words.length,
