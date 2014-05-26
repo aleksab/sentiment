@@ -10,7 +10,6 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,10 +39,11 @@ public class NewsletterData
 	{
 		PropertyConfigurator.configure("log4j.properties");
 
-		new NewsletterData().extractMostCommonWords(new File("target/topwords.txt"), Collections.<String> emptyList(), -1);
+		// new NewsletterData().extractMostCommonWords(new File("target/topwords.txt"), Collections.<String> emptyList(), -1);
 		// new NewsletterData().extractMostCommonWords(new File("target/topwords.txt"), SeedProvider.getStopWords(), 10000);
-		// new NewsletterData().countWords(new File("target/topwords.txt"));
-		// new NewsletterData().extractMostCommonWords("5380d084196269ee08201197");
+		new NewsletterData().countWords(new File("target/topwords.txt"));
+		new NewsletterData().countWords(new File("target/topwords.stripped.txt"));
+		//new NewsletterData().removeStopWords(new File("target/topwords.txt"), new File("target/topwords.stripped.txt"), SeedProvider.getStopWords());
 	}
 
 	public NewsletterData() throws UnknownHostException
@@ -74,12 +74,35 @@ public class NewsletterData
 		logger.info("Total number of words: {}", counter);
 	}
 
-	public void extractMostCommonWords(String id) throws UnknownHostException
+	public void removeStopWords(File input, File output, List<String> stopWords)
 	{
-		Article article = MongoProvider.getMongoProvider(Corpus.NEWSPAPER_ARTICLES).findById(id, Article.class);
-		logger.info("Content before replace: " + article.getContent());
-		String content = article.getContent().replaceAll("[^a-zA-ZøæåØÆÅ\\s]", " ");
-		logger.info("Content after replace: " + content);
+		Map<String, BigDecimal> occurences = new HashMap<>();
+
+		try (Scanner scanner = new Scanner(new FileInputStream(input), "ISO-8859-1"))
+		{
+			while (scanner.hasNextLine())
+			{
+				String inputWord = scanner.nextLine().toLowerCase();
+				String word = inputWord.split(":")[0];
+				double wordOccurence = Double.valueOf(inputWord.split(":")[1]);
+
+				// remove stopwords
+				if (stopWords.contains(word))
+					continue;
+
+				occurences.put(word, new BigDecimal(wordOccurence));
+			}
+		}
+		catch (Exception ex)
+		{
+			logger.error("Could not read content for file " + input.getAbsolutePath(), ex);
+		}
+
+		logger.info("Sorting map of size {}", occurences.size());
+		occurences = MapUtil.sortByValue(occurences);
+
+		logger.info("Saving results to file " + output);
+		writeResultToFile(output, occurences, -1);
 	}
 
 	public void extractMostCommonWords(File output, List<String> stopWords, int topWordsCount)
@@ -106,8 +129,8 @@ public class NewsletterData
 				String content = article.getContent().replaceAll("[^a-zA-ZøæåØÆÅ\\s]", " ");
 				String[] words = StringUtils.split(content, " ");
 
-				if (words.length < 50)
-					logger.warn("Article {} has less than 50 words: {} (before replace: {})", article.getId(), words.length,
+				if (words.length < 10)
+					logger.warn("Article {} has less than 10 words: {} (before replace: {})", article.getId(), words.length,
 							article.getContent().length());
 
 				for (String word : words)
