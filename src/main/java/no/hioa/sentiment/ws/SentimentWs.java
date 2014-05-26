@@ -29,10 +29,10 @@ import com.beust.jcommander.Parameter;
 
 public class SentimentWs
 {
-	private static final Logger	logger	= LoggerFactory.getLogger("fileLogger");
+	private static final Logger logger = LoggerFactory.getLogger("fileLogger");
 
 	@Parameter(names = "-port", description = "Webservice port")
-	private int					port	= 5300;
+	private int port = 5300;
 
 	public static void main(String[] args)
 	{
@@ -143,7 +143,7 @@ public class SentimentWs
 			public SentimentScoreResponse handle(SentimentScoreRequest request) throws UnknownHostException
 			{
 				DefaultSentimentScore score = new DefaultSentimentScore(Corpus.MOVIE_REVIEWS);
-				return new SentimentScoreResponse(score.getSentimentScore(request.getSentimentList()));
+				return new SentimentScoreResponse(score.getSentimentScore(request.getSentimentList(), request.getShifterList()));
 			}
 		});
 
@@ -163,8 +163,7 @@ public class SentimentWs
 						return "Could not find review by id " + id;
 					else
 						return review;
-				}
-				catch (UnknownHostException ex)
+				} catch (UnknownHostException ex)
 				{
 					logger.error("Unknown error", ex);
 					return "Could not connect to database";
@@ -186,8 +185,7 @@ public class SentimentWs
 				String input = scanner.nextLine();
 				buffer.append(input + "\n");
 			}
-		}
-		catch (Exception ex)
+		} catch (Exception ex)
 		{
 			logger.error("Could not read content for file " + file.getAbsolutePath(), ex);
 		}
