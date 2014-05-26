@@ -10,6 +10,7 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
+import no.hioa.sentiment.service.Corpus;
 import no.hioa.sentiment.service.MongoProvider;
 
 import org.apache.commons.io.IOUtils;
@@ -66,7 +67,8 @@ public class NewsletterImport
 	public NewsletterImport(String[] args) throws UnknownHostException
 	{
 		JCommander commander = new JCommander(this, args);
-		mongoOperations = MongoProvider.getMongoProvider(mongoHost, dbName, mongoUsername, mongoPassword);
+		// mongoOperations = MongoProvider.getMongoProvider(mongoHost, dbName, mongoUsername, mongoPassword);
+		mongoOperations = MongoProvider.getMongoProvider(Corpus.NEWSPAPER_ARTICLES);
 
 		if (printStats)
 			printStats();
@@ -119,7 +121,7 @@ public class NewsletterImport
 				mongoOperations.insert(article);
 			}
 		}
-		
+
 		// TODO: Add code for adding index to content
 
 		return totalArticles;
@@ -154,8 +156,7 @@ public class NewsletterImport
 			else
 			{
 				if (file.getName().endsWith("html4"))
-				{
-					consoleLogger.info("Extracting articles from {}", file.getAbsolutePath());
+				{					
 					List<Article> articles = extractArticlesVersion2(file);
 					totalArticles += articles.size();
 
@@ -166,7 +167,7 @@ public class NewsletterImport
 				}
 			}
 		}
-		
+
 		// TODO: Add code for adding index to content
 
 		return totalArticles;
@@ -176,7 +177,7 @@ public class NewsletterImport
 	{
 		List<Article> articles = new LinkedList<>();
 		BufferedReader reader = null;
-
+		double missingContent = 0;
 		try
 		{
 			reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), "ISO-8859-1"));
@@ -204,13 +205,25 @@ public class NewsletterImport
 
 				StringBuffer content = new StringBuffer();
 				line = reader.readLine();
-				while (line != null && !line.startsWith("<"))
+				while (line != null && !line.startsWith("<U"))
 				{
-					content.append(StringUtils.substringBefore(line, "¶").trim() + " ");
-					line = reader.readLine();
+					// ignore if we get more dates before next article (with U)
+					if (line.startsWith("<B") || line.startsWith("<B") || line.startsWith("<M") || line.startsWith("<D"))
+						line = reader.readLine();
+					else
+					{
+						line = line.replace("¶", " ");
+						content.append(line + " ");
+						line = reader.readLine();
+					}
 				}
 
-				articles.add(new Article(link, newspaper, date, content.toString()));
+				if (content.length() == 0)
+				{
+					missingContent++;
+				}
+				else
+					articles.add(new Article(link, newspaper, date, content.toString()));
 			}
 		}
 		catch (Exception ex)
@@ -221,6 +234,8 @@ public class NewsletterImport
 		{
 			IOUtils.closeQuietly(reader);
 		}
+
+		consoleLogger.warn("Number of article with empty content: {}", missingContent);
 
 		return articles;
 	}
@@ -256,13 +271,21 @@ public class NewsletterImport
 
 				StringBuffer content = new StringBuffer();
 				line = reader.readLine();
-				while (line != null && !line.startsWith("##"))
+				while (line != null && !line.startsWith("##U"))
 				{
-					content.append(StringUtils.substringBefore(line, "¶").trim() + " ");
-					line = reader.readLine();
+					// ignore if we get more dates before next article (with U)
+					if (line.startsWith("##B") || line.startsWith("##A") || line.startsWith("##M") || line.startsWith("##D"))
+						line = reader.readLine();
+					else
+					{
+						line = line.replace("¶", " ");
+						content.append(line + " ");
+						line = reader.readLine();
+					}
 				}
 
-				articles.add(new Article(link, newspaper, date, content.toString()));
+				if (content.length() > 0)
+					articles.add(new Article(link, newspaper, date, content.toString()));
 			}
 		}
 		catch (Exception ex)
