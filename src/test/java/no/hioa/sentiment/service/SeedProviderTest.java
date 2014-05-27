@@ -26,13 +26,13 @@ public class SeedProviderTest
 	public void testGetPositiveWords() throws Exception
 	{
 		List<String> words = SeedProvider.getPositiveWords();
-		Assert.assertEquals(15, words.size());
+		Assert.assertEquals(9, words.size());
 	}
 
 	@Test
 	public void testGetNegativeWords() throws Exception
 	{
 		List<String> words = SeedProvider.getNegativeWords();
-		Assert.assertEquals(18, words.size());
+		Assert.assertEquals(9, words.size());
 	}
 }

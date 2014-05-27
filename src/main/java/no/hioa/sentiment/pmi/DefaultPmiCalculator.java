@@ -33,6 +33,26 @@ public class DefaultPmiCalculator implements PmiCalculator
 		this.corpus = corpus;
 		this.mongoOperations = MongoProvider.getMongoProvider(corpus);
 	}
+	
+	@Override
+	public BigDecimal calculatePmi(String word, String seedWord, int maxDistance)
+	{
+		BigDecimal totalWords = new BigDecimal("1038434278");
+		
+		BigDecimal nearWordOccurence = new BigDecimal(findWordDistance(word, seedWord, maxDistance));
+		BigDecimal wordOccurence = new BigDecimal(findWordOccurence(word));
+		BigDecimal seedWordOccurence = new BigDecimal(findWordOccurence(seedWord));
+		
+		BigDecimal dividend = nearWordOccurence.divide(seedWordOccurence, RoundingMode.UP);
+		BigDecimal divisor = wordOccurence.divide(totalWords, RoundingMode.UP);
+		
+		BigDecimal result = dividend.divide(divisor, RoundingMode.CEILING);
+
+		// TODO: this is not ideal and we might lose precision
+		result = new BigDecimal(Math.log(result.floatValue()) / Math.log(2));
+				
+		return result;
+	}
 
 	@Override
 	public BigDecimal calculateSoPmi(String word, List<String> pWords, List<String> nWords, int maxDistance)

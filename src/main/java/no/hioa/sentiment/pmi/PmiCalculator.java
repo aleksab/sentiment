@@ -6,7 +6,8 @@ import java.util.List;
 public interface PmiCalculator
 {
 	/**
-	 * Find number of occurrence where two words are within a maximum distance of each other.
+	 * Find number of occurrence where two words are within a maximum distance
+	 * of each other.
 	 * 
 	 * @param word1
 	 * @param word2
@@ -25,7 +26,8 @@ public interface PmiCalculator
 	public long findWordOccurence(String word);
 
 	/**
-	 * Calculate the SO-PMI for word using distance of word from positive and negative words. Equation 10 in Turney (2003).
+	 * Calculate the SO-PMI for word using distance of word from positive and
+	 * negative words. Equation 10 in Turney (2003).
 	 * 
 	 * @param word
 	 *            word to calculate sentiment orientation for
@@ -38,4 +40,14 @@ public interface PmiCalculator
 	 * @return
 	 */
 	public BigDecimal calculateSoPmi(String word, List<String> pWords, List<String> nWords, int maxDistance);
+
+	/**
+	 * Calculate PMI for a word against every seed word. Equation 9 in Turney
+	 * (2003).
+	 * 
+	 * @param word
+	 * @param seedWord 
+	 * @return
+	 */
+	public BigDecimal calculatePmi(String word, String seedWord, int maxDistance);
 }

@@ -17,7 +17,6 @@ import java.util.Scanner;
 
 import no.hioa.sentiment.service.Corpus;
 import no.hioa.sentiment.service.MongoProvider;
-import no.hioa.sentiment.service.SeedProvider;
 import no.hioa.sentiment.util.MapUtil;
 import no.hioa.sentiment.util.WordUtil;
 
@@ -30,9 +29,6 @@ import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.query.BasicQuery;
 import org.springframework.data.mongodb.repository.support.MongoRepositoryFactory;
 import org.springframework.data.repository.core.support.RepositoryFactorySupport;
-
-import com.google.common.collect.Maps;
-import com.google.common.collect.Ordering;
 
 public class NewsletterData
 {
@@ -98,7 +94,7 @@ public class NewsletterData
 
 	public void removeStopWords(File input, File output, List<String> stopWords)
 	{
-		Map<String, BigDecimal> occurences = Maps.newTreeMap(Ordering.natural());
+		Map<String, BigDecimal> occurences = new HashMap<>();
 
 		try (Scanner scanner = new Scanner(new FileInputStream(input), "ISO-8859-1"))
 		{
@@ -120,7 +116,7 @@ public class NewsletterData
 			logger.error("Could not read content for file " + input.getAbsolutePath(), ex);
 		}
 
-		// logger.info("Sorting map");
+		logger.info("Sorting map");
 		Map<String, BigDecimal> sorted = MapUtil.sortByValue(occurences);
 
 		logger.info("Saving results to file " + output);
@@ -174,7 +170,7 @@ public class NewsletterData
 			page++;
 		}
 
-		// logger.info("Sorting map");
+		logger.info("Sorting map");
 		Map<String, BigDecimal> sorted = MapUtil.sortByValue(occurences);
 
 		logger.info("Saving results to file " + output);
