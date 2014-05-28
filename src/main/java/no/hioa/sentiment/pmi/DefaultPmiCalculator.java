@@ -23,34 +23,34 @@ import org.springframework.data.mongodb.core.query.BasicQuery;
 
 public class DefaultPmiCalculator implements PmiCalculator
 {
-	private static final Logger	logger	= LoggerFactory.getLogger("fileLogger");
+	private static final Logger logger = LoggerFactory.getLogger("fileLogger");
 
-	private Corpus				corpus;
-	private MongoOperations		mongoOperations;
+	private Corpus corpus;
+	private MongoOperations mongoOperations;
 
 	public DefaultPmiCalculator(Corpus corpus) throws UnknownHostException
 	{
 		this.corpus = corpus;
 		this.mongoOperations = MongoProvider.getMongoProvider(corpus);
 	}
-	
+
 	@Override
 	public BigDecimal calculatePmi(String word, String seedWord, int maxDistance)
 	{
 		BigDecimal totalWords = new BigDecimal("1038434278");
-		
+
 		BigDecimal nearWordOccurence = new BigDecimal(findWordDistance(word, seedWord, maxDistance));
 		BigDecimal wordOccurence = new BigDecimal(findWordOccurence(word));
 		BigDecimal seedWordOccurence = new BigDecimal(findWordOccurence(seedWord));
-		
+
 		BigDecimal dividend = nearWordOccurence.divide(seedWordOccurence, RoundingMode.UP);
 		BigDecimal divisor = wordOccurence.divide(totalWords, RoundingMode.UP);
-		
+
 		BigDecimal result = dividend.divide(divisor, RoundingMode.CEILING);
 
 		// TODO: this is not ideal and we might lose precision
 		result = new BigDecimal(Math.log(result.floatValue()) / Math.log(2));
-				
+
 		return result;
 	}
 
@@ -96,6 +96,43 @@ public class DefaultPmiCalculator implements PmiCalculator
 		return result;
 	}
 
+	public WordDistance findWordDistances(String word1, String word2)
+	{
+		if (!mongoOperations.collectionExists(WordDistance.class))
+			mongoOperations.createCollection(WordDistance.class);
+
+		BasicQuery query = new BasicQuery("{ $or : [ { word1 : '" + word1 + "', word2 : '" + word2 + "' }, { word1 : '" + word2 + "', word2 : '"
+				+ word1 + "' } ] }");
+		WordDistance wordDistance = mongoOperations.findOne(query, WordDistance.class);
+
+		if (wordDistance == null)
+		{
+			logger.info("Word {} and {} does not exists in lookup table", word1, word2);
+
+			BasicQuery textQuery = new BasicQuery("{ $text: { $search: \"'" + word1 + "' '" + word2 + "'\" } }");
+			String mapFunction = getJsFileContent(new File("src/main/resources/no/hioa/sentiment/pmi/map.js")).replaceAll("%WORD1%", word1)
+					.replaceAll("%WORD2%", word2);
+			String reduceFunction = getJsFileContent(new File("src/main/resources/no/hioa/sentiment/pmi/reduce.js"));
+
+			MapReduceResults<DistanceResult> results = mongoOperations.mapReduce(textQuery, corpus.getCollectionContentName(), mapFunction,
+					reduceFunction, DistanceResult.class);
+
+			Set<Long> distances = new HashSet<>();
+			for (DistanceResult result : results)
+			{
+				// id in results is the distance while value is occurrences
+				distances.add(result.getId());
+			}
+
+			wordDistance = new WordDistance(word1, word2, distances);
+			mongoOperations.insert(wordDistance);
+		}
+
+		logger.info("Word {} and {} with these distance {} found in lookup table", word1, word2, wordDistance.getDistances());
+
+		return wordDistance;
+	}
+
 	@Override
 	public long findWordDistance(String word1, String word2, long maxDistance)
 	{
@@ -111,8 +148,8 @@ public class DefaultPmiCalculator implements PmiCalculator
 			logger.info("Word {} and {} with max distance of {} does not exists in lookup table", word1, word2, maxDistance);
 
 			BasicQuery textQuery = new BasicQuery("{ $text: { $search: \"'" + word1 + "' '" + word2 + "'\" } }");
-			String mapFunction = getJsFileContent(new File("src/main/resources/no/hioa/sentiment/pmi/map.js")).replaceAll("%WORD1%", word1).replaceAll(
-					"%WORD2%", word2);
+			String mapFunction = getJsFileContent(new File("src/main/resources/no/hioa/sentiment/pmi/map.js")).replaceAll("%WORD1%", word1)
+					.replaceAll("%WORD2%", word2);
 			String reduceFunction = getJsFileContent(new File("src/main/resources/no/hioa/sentiment/pmi/reduce.js"));
 
 			MapReduceResults<DistanceResult> results = mongoOperations.mapReduce(textQuery, corpus.getCollectionContentName(), mapFunction,
@@ -129,8 +166,7 @@ public class DefaultPmiCalculator implements PmiCalculator
 			mongoOperations.insert(wordDistance);
 
 			logger.info("Word {} and {} have these distances: {}", word1, word2, distances);
-		}
-		else
+		} else
 			logger.info("Word {} and {} with these distance {} found in lookup table", word1, word2, wordDistance.getDistances());
 
 		int occurrences = 0;
@@ -146,6 +182,37 @@ public class DefaultPmiCalculator implements PmiCalculator
 		}
 
 		logger.info("Word {} and {} have {} occurences within distance of {}", word1, word2, occurrences, maxDistance);
+
+		return occurrences;
+	}
+
+	/**
+	 * Find how many times a word occurrences with enough text space around itself.
+	 * The text space can be on both left and right side. If a word has text
+	 * space on both sides, it counts as two.
+	 * 
+	 * @param word
+	 * @param textSpace
+	 * @return
+	 */
+	public long findWordOccurenceWithTextSpace(String word, int textSpace)
+	{
+		BasicQuery textQuery = new BasicQuery("{ $text: { $search: \"'" + word + "' } }");
+		String mapFunction = getJsFileContent(new File("src/main/resources/no/hioa/sentiment/pmi/map2.js")).replaceAll("%WORD%", word);
+		String reduceFunction = getJsFileContent(new File("src/main/resources/no/hioa/sentiment/pmi/reduce.js"));
+
+		MapReduceResults<DistanceResult> results = mongoOperations.mapReduce(textQuery, corpus.getCollectionContentName(), mapFunction,
+				reduceFunction, DistanceResult.class);
+
+		int occurrences = 0;
+		for (DistanceResult result : results)
+		{
+			// id in results is the distance while value is occurrences
+			if (result.getId() <= textSpace)
+				occurrences += result.getValue();
+		}
+
+		logger.info("Occurence for {} with text space {} is {}", word, textSpace, occurrences);
 
 		return occurrences;
 	}
@@ -169,8 +236,7 @@ public class DefaultPmiCalculator implements PmiCalculator
 			mongoOperations.insert(wordOccurence);
 
 			logger.info("Occurence for {} is {}", word, wordCount);
-		}
-		else
+		} else
 			logger.info("Word {} found in lookup table with occurence {}", word, wordOccurence.getOccurence());
 
 		return wordOccurence.getOccurence();
@@ -187,8 +253,7 @@ public class DefaultPmiCalculator implements PmiCalculator
 				String input = scanner.nextLine();
 				buffer.append(input + "\n");
 			}
-		}
-		catch (Exception ex)
+		} catch (Exception ex)
 		{
 			logger.error("Could not read content for file " + file.getAbsolutePath(), ex);
 		}
@@ -199,8 +264,8 @@ public class DefaultPmiCalculator implements PmiCalculator
 	@SuppressWarnings("unused")
 	private class DistanceResult
 	{
-		private long	id;
-		private long	value;
+		private long id;
+		private long value;
 
 		public long getId()
 		{
