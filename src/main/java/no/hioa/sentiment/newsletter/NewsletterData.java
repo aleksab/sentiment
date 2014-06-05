@@ -42,10 +42,10 @@ public class NewsletterData
 
 		// new NewsletterData().extractMostCommonWords(new File("target/topwords.txt"), Collections.<String> emptyList(), -1);
 		// new NewsletterData().extractMostCommonWords(new File("target/topwords.txt"), SeedProvider.getStopWords(), 10000);
-		new NewsletterData().countWords(new File("target/topwords.txt"));
+		//new NewsletterData().countWords(new File("target/topwords.txt"));
 		// new NewsletterData().countWords(new File("target/topwords.stripped.txt"));
 		//new NewsletterData().removeStopWords(new File("target/topwords.txt"), new File("target/topwords.stripped.txt"), SeedProvider.getStopWords());
-		// new NewsletterData().findArticlesForWord("målemani");
+		 new NewsletterData().findArticlesForWord("målemani");
 	}
 
 	public NewsletterData() throws UnknownHostException

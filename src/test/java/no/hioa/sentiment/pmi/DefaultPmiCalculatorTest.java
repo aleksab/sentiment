@@ -26,7 +26,7 @@ public class DefaultPmiCalculatorTest
 	public void setup() throws Exception
 	{
 		PropertyConfigurator.configure("log4j.properties");
-		pmi = new DefaultPmiCalculator(Corpus.MOVIE_REVIEWS);
+		pmi = new DefaultPmiCalculator(Corpus.NEWSPAPER_ARTICLES);
 	}
 
 	@Test
@@ -87,5 +87,29 @@ public class DefaultPmiCalculatorTest
 				Review.class);
 
 		Assert.assertEquals(reviews1.size(), reviews2.size());
+	}
+	
+	@Test
+	public void testFindWordOccurence4() throws Exception
+	{
+		Assert.assertEquals(3, pmi.findWordOccurence("Borgen"));
+	}
+	
+	@Test
+	public void testFindWordOccurenceInBlock() throws Exception
+	{
+		Assert.assertEquals(3, pmi.findWordOccurenceInBlock("målemani", 400));
+	}
+	
+	@Test
+	public void testFindWordOccurenceInBlock2() throws Exception
+	{
+		Assert.assertEquals(5, pmi.findWordOccurenceInBlock("målemani", 1000));
+	}
+	
+	@Test
+	public void testCalculatePmiForBlocks() throws Exception
+	{
+		Assert.assertEquals(5, pmi.calculatePmiForBlocks("målemani", "bra", 100));
 	}
 }
