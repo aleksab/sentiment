@@ -7,11 +7,11 @@ import java.util.List;
 
 import no.hioa.sentiment.filmweb.Review;
 import no.hioa.sentiment.service.Corpus;
+import no.hioa.sentiment.testdata.TestData;
 
 import org.apache.log4j.PropertyConfigurator;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class DefaultSentimentScoreTest
@@ -22,11 +22,11 @@ public class DefaultSentimentScoreTest
 	public void setup() throws Exception
 	{
 		PropertyConfigurator.configure("log4j.properties");
-		score = new DefaultSentimentScore(Corpus.MOVIE_REVIEWS);
+		TestData.populateTestData();
+		score = new DefaultSentimentScore(Corpus.TEST_ARTICLES);
 	}
 
 	@Test
-	@Ignore("Tied to database values")
 	public void testGetSentimentScore() throws Exception
 	{
 		List<SentimentWord> sentimentList = new LinkedList<>();

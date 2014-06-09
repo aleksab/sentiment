@@ -7,6 +7,7 @@ import no.hioa.sentiment.filmweb.Review;
 import no.hioa.sentiment.service.Corpus;
 import no.hioa.sentiment.service.MongoProvider;
 import no.hioa.sentiment.service.SeedProvider;
+import no.hioa.sentiment.testdata.TestData;
 
 import org.apache.log4j.PropertyConfigurator;
 import org.junit.Assert;
@@ -26,7 +27,8 @@ public class DefaultPmiCalculatorTest
 	public void setup() throws Exception
 	{
 		PropertyConfigurator.configure("log4j.properties");
-		pmi = new DefaultPmiCalculator(Corpus.NEWSPAPER_ARTICLES);
+		TestData.populateTestData();
+		pmi = new DefaultPmiCalculator(Corpus.TEST_ARTICLES);
 	}
 
 	@Test

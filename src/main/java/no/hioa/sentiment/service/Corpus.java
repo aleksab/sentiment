@@ -7,12 +7,13 @@ import org.apache.commons.lang.StringUtils;
 
 public enum Corpus
 {
-	MOVIE_REVIEWS("MOVIE_REVIEWS", "filmweb", "review", Review.class), NEWSPAPER_ARTICLES("NEWSPAPER_ARTICLES", "newspaper", "article", Article.class);
+	MOVIE_REVIEWS("MOVIE_REVIEWS", "filmweb", "review", Review.class), NEWSPAPER_ARTICLES("NEWSPAPER_ARTICLES", "newspaper", "article", Article.class), TEST_ARTICLES(
+			"TEST_ARTICLES", "test", "article", Article.class);
 
-	private String		name;
-	private String		dbName;
-	private String		dbCollectionContentName;
-	private Class<?>	collectionContentClazz;
+	private String name;
+	private String dbName;
+	private String dbCollectionContentName;
+	private Class<?> collectionContentClazz;
 
 	Corpus(String name, String dbName, String dbCollectionContentName, Class<?> collectionContentClazz)
 	{
