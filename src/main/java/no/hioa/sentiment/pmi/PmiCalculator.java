@@ -18,9 +18,30 @@ public interface PmiCalculator
 	public long findWordDistance(String word1, String word2, long maxDistance);
 
 	/**
-	 * Find occurrence of a word in content.
+	 * Find all possible distances between two words. 
+	 * 
+	 * @param word1
+	 * @param word2
+	 * @return
+	 */
+	public WordDistance findAllWordDistances(String word1, String word2);
+
+	/**
+	 * Find how many times a word occurs with block length on either left or
+	 * right side. If a word has a block with given length on both sides, it
+	 * counts as two.
 	 * 
 	 * @param word
+	 * @param textSpace
+	 * @return
+	 */
+	public long findWordOccurenceWithBlock(String word, int blockLength);
+
+	/**
+	 * Find occurrence of words in collection. 
+	 * 
+	 * @param word
+	 *            the word to find occurrence for.
 	 * @return
 	 */
 	public long findWordOccurence(String word);
@@ -46,7 +67,7 @@ public interface PmiCalculator
 	 * (2003).
 	 * 
 	 * @param word
-	 * @param seedWord 
+	 * @param seedWord
 	 * @return
 	 */
 	public BigDecimal calculatePmi(String word, String seedWord, int maxDistance);

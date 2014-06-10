@@ -21,7 +21,7 @@ import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.mapreduce.MapReduceResults;
 import org.springframework.data.mongodb.core.query.BasicQuery;
 
-public class DefaultPmiCalculator
+public class DefaultPmiCalculator implements PmiCalculator
 {
 	private static final Logger logger = LoggerFactory.getLogger("fileLogger");
 
@@ -54,6 +54,14 @@ public class DefaultPmiCalculator
 		result = new BigDecimal(Math.log(result.floatValue()) / Math.log(2));
 
 		return result;
+	}
+	
+
+	@Override
+	public BigDecimal calculatePmi(String word, String seedWord, int maxDistance)
+	{
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	public BigDecimal calculateSoPmi(String word, List<String> pWords, List<String> nWords, int maxDistance)
@@ -98,14 +106,16 @@ public class DefaultPmiCalculator
 	}
 
 	/**
-	 * Find number of occurrences between two words within a certain distance.
+	 * Find number of occurrence where two words are within a maximum distance
+	 * of each other.
 	 * 
 	 * @param word1
 	 * @param word2
 	 * @param maxDistance
+	 *            -1 means all possible distances
 	 * @return
 	 */
-	long findWordDistance(String word1, String word2, long maxDistance)
+	public long findWordDistance(String word1, String word2, long maxDistance)
 	{
 		WordDistance wordDistance = findAllWordDistances(word1, word2);
 
@@ -134,6 +144,7 @@ public class DefaultPmiCalculator
 	 * @param word2
 	 * @return
 	 */
+	@Override
 	public WordDistance findAllWordDistances(String word1, String word2)
 	{
 		if (!mongoOperations.collectionExists(WordDistance.class))
@@ -181,7 +192,8 @@ public class DefaultPmiCalculator
 	 * @param textSpace
 	 * @return
 	 */
-	long findWordOccurenceWithBlock(String word, int blockLength)
+	@Override
+	public long findWordOccurenceWithBlock(String word, int blockLength)
 	{
 		BasicQuery textQuery = new BasicQuery("{ $text: { $search: '" + word + "' } }");
 		String mapFunction = getJsFileContent(new File("src/main/resources/no/hioa/sentiment/pmi/map_block.js")).replaceAll("%WORD%", word);
@@ -211,7 +223,8 @@ public class DefaultPmiCalculator
 	 *            the word to find occurrence for.
 	 * @return
 	 */
-	long findWordOccurence(String word)
+	@Override
+	public long findWordOccurence(String word)
 	{
 		if (!mongoOperations.collectionExists(WordOccurence.class))
 			mongoOperations.createCollection(WordOccurence.class);
