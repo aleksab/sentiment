@@ -1,5 +1,8 @@
 package no.hioa.sentiment.pmi;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 import no.hioa.sentiment.service.Corpus;
 import no.hioa.sentiment.testdata.TestData;
 
@@ -79,4 +82,28 @@ public class DefaultPmiCalculatorTest
 	{
 		Assert.assertEquals(1, pmi.findWordDistance("absolutt", "fantastiske", 4));
 	}	
+	
+	@Test
+	public void testCalculatePmiForBlocks() throws Exception
+	{		
+		Assert.assertEquals(new BigDecimal("5.5078"), pmi.calculatePmiForBlocks("absolutt", "fantastiske", 10).setScale(4, RoundingMode.UP));
+	}	
+	
+	@Test
+	public void testCalculatePmiForBlocks2() throws Exception
+	{		
+		Assert.assertEquals(new BigDecimal("4.5078"), pmi.calculatePmiForBlocks("absolutt", "fantastiske", 50).setScale(4, RoundingMode.UP));
+	}	
+	
+	@Test
+	public void testCalculatePmiForDocuments() throws Exception
+	{		
+		Assert.assertEquals(new BigDecimal("5.5078"), pmi.calculatePmiForDocuments("absolutt", "fantastiske", 10).setScale(4, RoundingMode.UP));
+	}
+	
+	@Test
+	public void testCalculatePmiForDocuments2() throws Exception
+	{		
+		Assert.assertEquals(new BigDecimal("5.5078"), pmi.calculatePmiForDocuments("absolutt", "fantastiske", 50).setScale(4, RoundingMode.UP));
+	}
 }

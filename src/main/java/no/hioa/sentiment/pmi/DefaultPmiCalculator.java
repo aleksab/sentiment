@@ -34,17 +34,53 @@ public class DefaultPmiCalculator implements PmiCalculator
 		this.mongoOperations = MongoProvider.getMongoProvider(corpus);
 	}
 
-	public BigDecimal calculatePmiForDocuments(String word, String seedWord, int maxDistance)
+	@Override
+	public BigDecimal calculatePmi(String word, String seedWord, int maxDistance)
 	{
-		return BigDecimal.ZERO;
+		return calculatePmiForBlocks(word, seedWord, maxDistance);
 	}
 
+	/**
+	 * Calculate pmi between two words based on documents.
+	 * 
+	 * @param word
+	 * @param seedWord
+	 * @param maxDistance
+	 * @return
+	 */
+	public BigDecimal calculatePmiForDocuments(String word, String seedWord, int maxDistance)
+	{
+		BigDecimal wordBlockOccurence = new BigDecimal(findWordDistance(word, seedWord, maxDistance)).setScale(10);
+		BigDecimal wordOccurence = new BigDecimal(findWordOccurence(word)).setScale(10);
+		BigDecimal seedOccurence = new BigDecimal(findWordOccurence(seedWord)).setScale(10);
+		BigDecimal totalWords = new BigDecimal(getTotalWords());
+
+		BigDecimal dividend = wordBlockOccurence.divide(totalWords, RoundingMode.UP);
+		BigDecimal divisor = (wordOccurence.multiply(seedOccurence)).divide((totalWords.multiply(totalWords)), RoundingMode.UP);
+		BigDecimal result = dividend.divide(divisor, RoundingMode.CEILING);
+
+		// TODO: this is not ideal and we might lose precision
+		result = new BigDecimal(Math.log(result.floatValue()) / Math.log(2));
+
+		logger.info("PMI document for word {} and seed word {} with max distance {} is {}", word, seedWord, maxDistance, result);
+		return result;
+	}
+
+	/**
+	 * Calculate pmi between two words based on blocks. There might be several
+	 * blocks within the same document.
+	 * 
+	 * @param word
+	 * @param seedWord
+	 * @param maxDistance
+	 * @return
+	 */
 	public BigDecimal calculatePmiForBlocks(String word, String seedWord, int maxDistance)
 	{
 		BigDecimal wordBlockOccurence = new BigDecimal(findWordDistance(word, seedWord, maxDistance)).setScale(10);
 		BigDecimal seedBlockOccurence = new BigDecimal(findWordOccurenceWithBlock(seedWord, maxDistance)).setScale(10);
 		BigDecimal wordOccurence = new BigDecimal(findWordOccurence(word)).setScale(10);
-		BigDecimal totalWords = new BigDecimal("1038434278").setScale(10);
+		BigDecimal totalWords = new BigDecimal(getTotalWords());
 
 		BigDecimal dividend = wordBlockOccurence.divide(seedBlockOccurence, RoundingMode.UP);
 		BigDecimal divisor = wordOccurence.divide(totalWords, RoundingMode.UP);
@@ -53,15 +89,8 @@ public class DefaultPmiCalculator implements PmiCalculator
 		// TODO: this is not ideal and we might lose precision
 		result = new BigDecimal(Math.log(result.floatValue()) / Math.log(2));
 
+		logger.info("PMI block for word {} and seed word {} with max distance {} is {}", word, seedWord, maxDistance, result);
 		return result;
-	}
-	
-
-	@Override
-	public BigDecimal calculatePmi(String word, String seedWord, int maxDistance)
-	{
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 	public BigDecimal calculateSoPmi(String word, List<String> pWords, List<String> nWords, int maxDistance)
