@@ -1,6 +1,6 @@
 function printDistance() {
 	var word = '%WORD%';
-	var words = this.content.replace('.','').replace(',','').split(' ');	
+	var words = this.content.replace(/\./g,'').replace(/\,/g,'').split(' ');	
 	for ( var i = 0; i < words.length; i++) {
 		var cWord = words[i].toLowerCase();
 		if (cWord == word) {

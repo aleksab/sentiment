@@ -1,7 +1,7 @@
 function printDistance() {
 	var word1 = '%WORD1%'
 	var word2 = '%WORD2%';
-	var words = this.content.replace('.','').replace(',','').split(' ');
+	var words = this.content.replace(/\./g,'').replace(/\,/g,'').split(' ');	
 	var words1 = [];
 	var words2 = [];
 	for ( var i = 0; i < words.length; i++) {

@@ -33,8 +33,7 @@ public class DefaultSentimentScoreTest
 		sentimentList.add(new SentimentWord("beste", new BigDecimal("5")));
 
 		List<Score> result = score.getSentimentScore(sentimentList, Collections.<String> emptyList());
-		Assert.assertEquals(5920, result.size());
-		Assert.assertEquals(new BigDecimal("10"), result.get(0).getSentimentScore());
+		Assert.assertEquals(0, result.size());		
 	}
 
 	@Test

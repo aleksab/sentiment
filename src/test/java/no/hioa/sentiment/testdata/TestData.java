@@ -11,6 +11,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 import no.hioa.sentiment.newsletter.Article;
+import no.hioa.sentiment.pmi.WordDistance;
+import no.hioa.sentiment.pmi.WordOccurence;
 import no.hioa.sentiment.service.Corpus;
 import no.hioa.sentiment.service.MongoProvider;
 
@@ -20,6 +22,7 @@ import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.mongodb.core.MongoOperations;
+import org.springframework.data.mongodb.core.query.BasicQuery;
 
 public class TestData
 {
@@ -36,13 +39,23 @@ public class TestData
 	{
 		MongoOperations mongoOperations = MongoProvider.getMongoProvider(Corpus.TEST_ARTICLES);
 
-		if (mongoOperations.collectionExists(Article.class))
+		if (!mongoOperations.collectionExists(Article.class))
 		{
-			consoleLogger.info("Dropping collection");
-			mongoOperations.dropCollection(Article.class);
-		}
+			consoleLogger.info("Creating collection");
+			mongoOperations.createCollection(Article.class);
 
-		mongoOperations.createCollection(Article.class);
+			throw new RuntimeException("Run this manually: db.article.ensureIndex( { content : \"text\" } )");
+		}
+		
+		if (mongoOperations.collectionExists(WordOccurence.class))
+			mongoOperations.dropCollection(WordOccurence.class);
+
+		if (mongoOperations.collectionExists(WordDistance.class))
+			mongoOperations.dropCollection(WordDistance.class);
+
+		// remove all articles with content
+		BasicQuery query = new BasicQuery("{ $where: \"this.content.length > 0\" }");
+		mongoOperations.remove(query, Article.class);
 
 		File folder = new File("src/test/resources/no/hioa/sentiment/testdata/");
 		for (File file : folder.listFiles())
