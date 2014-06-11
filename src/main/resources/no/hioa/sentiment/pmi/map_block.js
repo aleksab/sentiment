@@ -5,10 +5,10 @@ function printDistance() {
 		var cWord = words[i].toLowerCase();
 		if (cWord == word) {
 			if (i != 0) {
-				emit(i, 1);
+				emit(i + 1, 1);
 			}
 			if (i < words.length) {
-				emit(words.length - i - 1, 1);
+				emit(words.length - i, 1);
 			}
 		}		
 	}	

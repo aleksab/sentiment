@@ -50,13 +50,19 @@ public class DefaultPmiCalculatorTest
 	@Test
 	public void testFindWordOccurenceWithBlock() throws Exception
 	{
-		Assert.assertEquals(0, pmi.findWordOccurenceWithBlock("fantastiske", 8));
+		Assert.assertEquals(2, pmi.findWordOccurenceWithBlock("fantastiske", 8));
 	}
 
 	@Test
 	public void testFindWordOccurenceWithBlock2() throws Exception
 	{
-		Assert.assertEquals(2, pmi.findWordOccurenceWithBlock("fantastiske", 50));
+		Assert.assertEquals(0, pmi.findWordOccurenceWithBlock("fantastiske", 50));
+	}
+	
+	@Test
+	public void testFindWordOccurenceWithBlock3() throws Exception
+	{
+		Assert.assertEquals(2, pmi.findWordOccurenceWithBlock("fantastiske", 10));
 	}
 	
 	@Test
@@ -86,14 +92,20 @@ public class DefaultPmiCalculatorTest
 	@Test
 	public void testCalculatePmiForBlocks() throws Exception
 	{		
-		Assert.assertEquals(new BigDecimal("5.5078"), pmi.calculatePmiForBlocks("absolutt", "fantastiske", 10).setScale(4, RoundingMode.UP));
+		Assert.assertEquals(new BigDecimal("1.1859"), pmi.calculatePmiForBlocks("absolutt", "fantastiske", 10).setScale(4, RoundingMode.UP));
 	}	
 	
 	@Test
 	public void testCalculatePmiForBlocks2() throws Exception
 	{		
-		Assert.assertEquals(new BigDecimal("4.5078"), pmi.calculatePmiForBlocks("absolutt", "fantastiske", 50).setScale(4, RoundingMode.UP));
+		Assert.assertEquals(new BigDecimal("0.0000"), pmi.calculatePmiForBlocks("absolutt", "fantastiske", 50).setScale(4, RoundingMode.UP));
 	}	
+	
+	@Test
+	public void testCalculatePmiForBlocks3() throws Exception
+	{		
+		Assert.assertEquals(new BigDecimal("0.0000"), pmi.calculatePmiForBlocks("asdasfafa", "fantastiske", 50).setScale(4, RoundingMode.UP));
+	}
 	
 	@Test
 	public void testCalculatePmiForDocuments() throws Exception
