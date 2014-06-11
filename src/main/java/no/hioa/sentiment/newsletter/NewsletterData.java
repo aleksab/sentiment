@@ -40,7 +40,8 @@ import org.springframework.data.repository.core.support.RepositoryFactorySupport
 
 public class NewsletterData
 {
-	private static final Logger	logger	= LoggerFactory.getLogger("fileLogger");
+	private static final Logger	logger			= LoggerFactory.getLogger("fileLogger");
+	private static final Logger	consoleLogger	= LoggerFactory.getLogger("stdoutLogger");
 
 	private ArticleRepository	repository;
 
@@ -55,7 +56,7 @@ public class NewsletterData
 		// new NewsletterData().removeStopWords(new File("target/topwords.txt"), new File("target/topwords.stripped.txt"),
 		// SeedProvider.getStopWords());
 		// new NewsletterData().findArticlesForWord("målemani");
-		new NewsletterData().calculatePmiForAllWords(new File("target/topwords.stripped.txt"), 3, 100);
+		new NewsletterData().calculatePmiForAllWords(new File("target/topwords.stripped.txt"), 10000, 100);
 	}
 
 	public NewsletterData() throws UnknownHostException
@@ -84,10 +85,12 @@ public class NewsletterData
 			ex.printStackTrace();
 		}
 
+		consoleLogger.info("Calculating pmi for {} words", maxWords);
+
 		List<String> seedWords = SeedProvider.getPositiveWords();
 		seedWords.addAll(SeedProvider.getNegativeWords());
 
-		DefaultPmiCalculator pmi = new DefaultPmiCalculator(Corpus.TEST_ARTICLES);
+		DefaultPmiCalculator pmi = new DefaultPmiCalculator(Corpus.NEWSPAPER_ARTICLES);
 
 		PrintWriter pmiWritter = new PrintWriter("pmi.d" + maxDistance + ".csv", "ISO-8859-1");
 		PrintWriter wordBlockOccurenceWritter = new PrintWriter("wordBlockOccurence.d" + maxDistance + ".csv", "ISO-8859-1");
@@ -118,6 +121,8 @@ public class NewsletterData
 		int counter = 1;
 		for (String targetWord : targetWords)
 		{
+			consoleLogger.info("Calculating pmi for word {} ({})", targetWord, counter);
+
 			pmiWritter.append(targetWord + ",");
 			wordBlockOccurenceWritter.append(targetWord + ",");
 			seedBlockOccurenceWritter.append(targetWord + ",");

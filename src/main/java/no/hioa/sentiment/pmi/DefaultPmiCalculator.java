@@ -85,7 +85,8 @@ public class DefaultPmiCalculator implements PmiCalculator
 		BigDecimal divisor = BigDecimal.ZERO;
 		BigDecimal result = BigDecimal.ZERO;
 
-		if (seedBlockOccurence.compareTo(BigDecimal.ZERO) == 0 || wordOccurence.compareTo(BigDecimal.ZERO) == 0)
+		if (wordBlockOccurence.compareTo(BigDecimal.ZERO) == 0 || seedBlockOccurence.compareTo(BigDecimal.ZERO) == 0
+				|| wordOccurence.compareTo(BigDecimal.ZERO) == 0)
 		{
 			result = BigDecimal.ONE;
 		}
