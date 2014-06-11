@@ -10,25 +10,23 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document
-public class WordDistance
+public class WordBlock
 {
 	@Id
 	private String			id;
-	private String			word1;
-	private String			word2;
-	private Map<Long, Long>	distances;
+	private String			word;
+	private Map<Long, Long>	sizes;
 
-	public WordDistance()
+	public WordBlock()
 	{
 
 	}
 
-	public WordDistance(String word1, String word2, Map<Long, Long> distances)
+	public WordBlock(String word, Map<Long, Long> sizes)
 	{
-		super();
-		this.word1 = word1;
-		this.word2 = word2;
-		this.distances = distances;
+		super();		
+		this.word = word;
+		this.sizes = sizes;
 	}
 
 	public String getId()
@@ -41,34 +39,24 @@ public class WordDistance
 		this.id = id;
 	}
 
-	public String getWord1()
+	public String getWord()
 	{
-		return word1;
+		return word;
 	}
 
-	public void setWord1(String word1)
+	public void setWord(String word)
 	{
-		this.word1 = word1;
+		this.word = word;
 	}
 
-	public String getWord2()
+	public Map<Long, Long> getSizes()
 	{
-		return word2;
+		return sizes;
 	}
 
-	public void setWord2(String word2)
+	public void setSizes(Map<Long, Long> sizes)
 	{
-		this.word2 = word2;
-	}
-
-	public Map<Long, Long> getDistances()
-	{
-		return distances;
-	}
-
-	public void setDistances(Map<Long, Long> distances)
-	{
-		this.distances = distances;
+		this.sizes = sizes;
 	}
 
 	@Override

@@ -5,10 +5,10 @@ import java.io.FileInputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.UnknownHostException;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
-import java.util.Set;
 
 import no.hioa.sentiment.service.Corpus;
 import no.hioa.sentiment.service.MongoProvider;
@@ -37,7 +37,7 @@ public class DefaultPmiCalculator implements PmiCalculator
 	@Override
 	public BigDecimal calculatePmi(String word, String seedWord, int maxDistance)
 	{
-		return calculatePmiForBlocks(word, seedWord, maxDistance);
+		return null;// calculatePmiForBlocks(word, seedWord, maxDistance);
 	}
 
 	/**
@@ -74,22 +74,17 @@ public class DefaultPmiCalculator implements PmiCalculator
 	 * @param maxDistance
 	 * @return
 	 */
-	public BigDecimal calculatePmiForBlocks(String word, String seedWord, int maxDistance)
+	public PmiResult calculatePmiForBlocks(String word, String seedWord, int maxDistance)
 	{
-		BigDecimal wordBlockOccurence = new BigDecimal(findWordDistance(word, seedWord, maxDistance)).setScale(10);
-		BigDecimal seedBlockOccurence = new BigDecimal(findWordOccurenceWithBlock(seedWord, maxDistance) * maxDistance).setScale(10);
-		BigDecimal wordOccurence = new BigDecimal(findWordOccurence(word)).setScale(10);
+		BigDecimal wordBlockOccurence = new BigDecimal(findWordDistance(word, seedWord, maxDistance)).setScale(5, RoundingMode.UP);
+		BigDecimal seedBlockOccurence = new BigDecimal(findWordOccurenceWithBlock(seedWord, maxDistance) * maxDistance).setScale(5, RoundingMode.UP);
+		BigDecimal wordOccurence = new BigDecimal(findWordOccurence(word)).setScale(5, RoundingMode.UP);
 		BigDecimal totalWords = new BigDecimal(getTotalWords());
 
-		logger.info("wordBlockOccurence (number of times target is near seed within distance): {}", wordBlockOccurence);
-		logger.info("seedBlockOccurence (number of blocks with distance around seed): {}", seedBlockOccurence);
-		logger.info("wordOccurence (occurence of target): {}", wordOccurence);
-		logger.info("totalWords: {}", totalWords);
-		
 		BigDecimal dividend = BigDecimal.ZERO;
 		BigDecimal divisor = BigDecimal.ZERO;
 		BigDecimal result = BigDecimal.ZERO;
-		
+
 		if (seedBlockOccurence.compareTo(BigDecimal.ZERO) == 0 || wordOccurence.compareTo(BigDecimal.ZERO) == 0)
 		{
 			result = BigDecimal.ONE;
@@ -98,17 +93,19 @@ public class DefaultPmiCalculator implements PmiCalculator
 		{
 			dividend = wordBlockOccurence.divide(seedBlockOccurence, RoundingMode.UP);
 			divisor = wordOccurence.divide(totalWords, RoundingMode.UP);
-			result = dividend.divide(divisor, RoundingMode.CEILING);
-		}		
+			result = dividend.divide(divisor, RoundingMode.UP);
+		}
 
 		logger.info("dividend: {}", dividend);
 		logger.info("divisor: {}", divisor);
 
 		// TODO: this is not ideal and we might lose precision
-		result = new BigDecimal(Math.log(result.floatValue()) / Math.log(2));
+		result = new BigDecimal(Math.log(result.floatValue()) / Math.log(2)).setScale(5, RoundingMode.UP);
 
-		logger.info("PMI block for word {} and seed word {} with max distance {} is {}", word, seedWord, maxDistance, result);
-		return result;
+		PmiResult pmiResult = new PmiResult(wordBlockOccurence, seedBlockOccurence, wordOccurence, totalWords, result);
+
+		logger.info("PMI result for word {} and seed word {} with max distance {} is {}", word, seedWord, maxDistance, pmiResult);
+		return pmiResult;
 	}
 
 	public BigDecimal calculateSoPmi(String word, List<String> pWords, List<String> nWords, int maxDistance)
@@ -166,15 +163,10 @@ public class DefaultPmiCalculator implements PmiCalculator
 		WordDistance wordDistance = findAllWordDistances(word1, word2);
 
 		int occurrences = 0;
-		if (maxDistance == -1)
-			occurrences = wordDistance.getDistances().size();
-		else
+		for (Long size : wordDistance.getDistances().keySet())
 		{
-			for (Long distance : wordDistance.getDistances())
-			{
-				if (distance <= maxDistance)
-					occurrences++;
-			}
+			if (size <= maxDistance || maxDistance == -1)
+				occurrences += wordDistance.getDistances().get(size);
 		}
 
 		logger.info("Word {} and {} have {} occurences within distance of {}", word1, word2, occurrences, maxDistance);
@@ -211,11 +203,11 @@ public class DefaultPmiCalculator implements PmiCalculator
 			MapReduceResults<DistanceResult> results = mongoOperations.mapReduce(textQuery, corpus.getCollectionContentName(), mapFunction,
 					reduceFunction, DistanceResult.class);
 
-			Set<Long> distances = new HashSet<>();
+			Map<Long, Long> distances = new HashMap<>();
 			for (DistanceResult result : results)
 			{
 				// id in results is the distance while value is occurrences
-				distances.add(result.getId());
+				distances.put(result.getId(), result.getValue());
 			}
 
 			wordDistance = new WordDistance(word1, word2, distances);
@@ -240,24 +232,60 @@ public class DefaultPmiCalculator implements PmiCalculator
 	@Override
 	public long findWordOccurenceWithBlock(String word, int blockLength)
 	{
-		BasicQuery textQuery = new BasicQuery("{ $text: { $search: '" + word + "' } }");
-		String mapFunction = getJsFileContent(new File("src/main/resources/no/hioa/sentiment/pmi/map_block.js")).replaceAll("%WORD%", word);
-		String reduceFunction = getJsFileContent(new File("src/main/resources/no/hioa/sentiment/pmi/reduce.js"));
-
-		MapReduceResults<DistanceResult> results = mongoOperations.mapReduce(textQuery, corpus.getCollectionContentName(), mapFunction,
-				reduceFunction, DistanceResult.class);
+		WordBlock wordBlock = findAllWordOccurenceWithBlock(word);
 
 		int occurrences = 0;
-		for (DistanceResult result : results)
+		for (Long size : wordBlock.getSizes().keySet())
 		{
-			// id in results is the distance while value is occurrences
-			if (blockLength <= result.getId())
-				occurrences += result.getValue();
+			if (blockLength <= size)
+				occurrences += wordBlock.getSizes().get(size);
 		}
 
-		logger.info("Occurence for {} with block length {} is {}", word, blockLength, occurrences);
+		logger.info("Word {} has {} size with block length of {}", word, occurrences, blockLength);
 
 		return occurrences;
+	}
+
+	/**
+	 * Find all block sizes for a word. Counts both left and right side for a word.
+	 * 
+	 * @param word
+	 * @return
+	 */
+	public WordBlock findAllWordOccurenceWithBlock(String word)
+	{
+		if (!mongoOperations.collectionExists(WordBlock.class))
+			mongoOperations.createCollection(WordBlock.class);
+
+		BasicQuery query = new BasicQuery("{ word : '" + word + "' }");
+		WordBlock wordBlock = mongoOperations.findOne(query, WordBlock.class);
+
+		if (wordBlock == null)
+		{
+			BasicQuery textQuery = new BasicQuery("{ $text: { $search: '" + word + "' } }");
+			String mapFunction = getJsFileContent(new File("src/main/resources/no/hioa/sentiment/pmi/map_block.js")).replaceAll("%WORD%", word);
+			String reduceFunction = getJsFileContent(new File("src/main/resources/no/hioa/sentiment/pmi/reduce.js"));
+
+			MapReduceResults<DistanceResult> results = mongoOperations.mapReduce(textQuery, corpus.getCollectionContentName(), mapFunction,
+					reduceFunction, DistanceResult.class);
+
+			Map<Long, Long> sizes = new HashMap<>();
+			for (DistanceResult result : results)
+			{
+				// id in results is the distance while value is occurrences
+				sizes.put(result.getId(), result.getValue());
+			}
+
+			wordBlock = new WordBlock(word, sizes);
+			mongoOperations.insert(wordBlock);
+
+			logger.info("Sizes for {} are {}", word, wordBlock.getSizes());
+
+		}
+		else
+			logger.info("Word {} found in lookup table with sizes {}", word, wordBlock.getSizes());
+
+		return wordBlock;
 	}
 
 	/**
@@ -290,7 +318,7 @@ public class DefaultPmiCalculator implements PmiCalculator
 			long wordCount = 0;
 			if (results.iterator().hasNext())
 				wordCount = results.iterator().next().value;
-			
+
 			wordOccurence = new WordOccurence(word, wordCount);
 			mongoOperations.insert(wordOccurence);
 
@@ -307,7 +335,7 @@ public class DefaultPmiCalculator implements PmiCalculator
 	 * 
 	 * @return
 	 */
-	long getTotalWords()
+	public long getTotalWords()
 	{
 		if (!mongoOperations.collectionExists(WordOccurence.class))
 			mongoOperations.createCollection(WordOccurence.class);
@@ -380,6 +408,32 @@ public class DefaultPmiCalculator implements PmiCalculator
 		public void setValue(long value)
 		{
 			this.value = value;
+		}
+
+		@Override
+		public String toString()
+		{
+			return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
+		}
+	}
+
+	public class PmiResult
+	{
+		public BigDecimal	wordBlockOccurence;
+		public BigDecimal	seedBlockOccurence;
+		public BigDecimal	wordOccurence;
+		public BigDecimal	totalWords;
+		public BigDecimal	result;
+
+		public PmiResult(BigDecimal wordBlockOccurence, BigDecimal seedBlockOccurence, BigDecimal wordOccurence, BigDecimal totalWords,
+				BigDecimal result)
+		{
+			super();
+			this.wordBlockOccurence = wordBlockOccurence;
+			this.seedBlockOccurence = seedBlockOccurence;
+			this.wordOccurence = wordOccurence;
+			this.totalWords = totalWords;
+			this.result = result;
 		}
 
 		@Override
