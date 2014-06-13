@@ -92,10 +92,10 @@ public class NewsletterData
 
 		DefaultPmiCalculator pmi = new DefaultPmiCalculator(Corpus.NEWSPAPER_ARTICLES);
 
-		PrintWriter pmiWritter = new PrintWriter("pmi.d" + maxDistance + ".csv", "ISO-8859-1");
-		PrintWriter wordBlockOccurenceWritter = new PrintWriter("wordBlockOccurence.d" + maxDistance + ".csv", "ISO-8859-1");
-		PrintWriter seedBlockOccurenceWritter = new PrintWriter("seedBlockOccurence.d" + maxDistance + ".csv", "ISO-8859-1");
-		PrintWriter wordOccurenceWritter = new PrintWriter("wordOccurence.d" + maxDistance + ".csv", "ISO-8859-1");
+		PrintWriter pmiWritter = new PrintWriter("target/pmi.d" + maxDistance + ".csv", "ISO-8859-1");
+		PrintWriter wordBlockOccurenceWritter = new PrintWriter("target/wordBlockOccurence.d" + maxDistance + ".csv", "ISO-8859-1");
+		PrintWriter seedBlockOccurenceWritter = new PrintWriter("target/seedBlockOccurence.d" + maxDistance + ".csv", "ISO-8859-1");
+		PrintWriter wordOccurenceWritter = new PrintWriter("target/wordOccurence.d" + maxDistance + ".csv", "ISO-8859-1");
 
 		pmiWritter.append("Total words: " + pmi.getTotalWords() + "\nDistance: " + maxDistance + "\n\n");
 		wordBlockOccurenceWritter.append("Total words: " + pmi.getTotalWords() + "\nDistance: " + maxDistance + "\n\n");
@@ -140,6 +140,11 @@ public class NewsletterData
 			seedBlockOccurenceWritter.append("OK\n");
 			wordOccurenceWritter.append("OK\n");
 
+			pmiWritter.flush();
+			wordBlockOccurenceWritter.flush();
+			seedBlockOccurenceWritter.flush();
+			wordOccurenceWritter.flush();
+			
 			if (counter++ >= maxWords)
 			{
 				logger.info("Limit of words to calulcate pmi for has been reached");
