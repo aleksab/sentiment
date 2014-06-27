@@ -61,7 +61,7 @@ public class NewsletterData
 
 	public NewsletterData() throws UnknownHostException
 	{
-		MongoOperations mongoOperations = MongoProvider.getMongoProvider(Corpus.NEWSPAPER_ARTICLES);
+		MongoOperations mongoOperations = MongoProvider.getMongoProvider("s1", Corpus.NEWSPAPER_ARTICLES);
 
 		RepositoryFactorySupport factory = new MongoRepositoryFactory(mongoOperations);
 		this.repository = factory.getRepository(ArticleRepository.class);

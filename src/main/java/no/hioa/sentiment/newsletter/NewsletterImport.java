@@ -107,13 +107,18 @@ public class NewsletterImport
 		for (Article art : arts)
 			consoleLogger.info(art.getContent());
 	}
-	
+
 	public void initDb()
 	{
 		if (!mongoOperations.collectionExists(Article.class))
 		{
 			mongoOperations.createCollection(Article.class);
+			consoleLogger.info("Run this manually: db.runCommand( { enablesharding : \"newspaper\" } );");
+			consoleLogger.info("Run this manually: db.runCommand( { shardcollection : \"newspaper.article\", key : { _id : 1 } } )");
+			consoleLogger.info("Run this manually: db.article.ensureIndex( { content : \"text\" } )");
 		}
+		else
+			consoleLogger.info("Collection article already exists! Make sure it's sharded and has index on text");
 	}
 
 	public long importAllArticlesVersion1(File folder)
