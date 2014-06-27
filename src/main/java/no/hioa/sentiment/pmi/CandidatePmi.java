@@ -46,7 +46,7 @@ public class CandidatePmi
 	public CandidatePmi(String[] args) throws UnknownHostException
 	{
 		new JCommander(this, args);
-		pmiCalculator = new DefaultPmiCalculator(Corpus.NEWSPAPER_ARTICLES);
+		pmiCalculator = new DefaultPmiCalculator("localhost", Corpus.NEWSPAPER_ARTICLES);
 
 		calculateCandidatePmi(new File("target/"), maxDistance);
 	}

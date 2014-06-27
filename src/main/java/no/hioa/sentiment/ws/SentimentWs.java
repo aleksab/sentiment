@@ -102,7 +102,7 @@ public class SentimentWs
 			@Override
 			public OccurenceResponse handle(OccurenceRequest request) throws UnknownHostException
 			{
-				DefaultPmiCalculator pmi = new DefaultPmiCalculator(request.getCorpus());
+				DefaultPmiCalculator pmi = new DefaultPmiCalculator("localhost", request.getCorpus());
 				long occurence = pmi.findWordOccurence(request.getWord());
 				return new OccurenceResponse(request.getWord(), occurence);
 			}
@@ -113,7 +113,7 @@ public class SentimentWs
 			@Override
 			public NearResponse handle(NearRequest request) throws UnknownHostException
 			{
-				DefaultPmiCalculator pmi = new DefaultPmiCalculator(request.getCorpus());
+				DefaultPmiCalculator pmi = new DefaultPmiCalculator("localhost", request.getCorpus());
 				long occurence = pmi.findWordDistance(request.getWord1(), request.getWord2(), request.getMaxDistance());
 				return new NearResponse(request.getWord1(), request.getWord2(), request.getMaxDistance(), occurence);
 			}

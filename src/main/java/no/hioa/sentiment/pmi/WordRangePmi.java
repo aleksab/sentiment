@@ -53,7 +53,7 @@ public class WordRangePmi
 	public WordRangePmi(String[] args) throws UnknownHostException
 	{
 		new JCommander(this, args);
-		pmiCalculator = new DefaultPmiCalculator(Corpus.MOVIE_REVIEWS);
+		pmiCalculator = new DefaultPmiCalculator("localhost", Corpus.MOVIE_REVIEWS);
 
 		// calculateWordRangePmi(new File("target/"), startDistance, endDistance, word);
 		calculateCandidateRangePmi(new File("target/"), startDistance, endDistance);
