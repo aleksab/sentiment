@@ -20,7 +20,7 @@ public class DefaultPmiCalculatorTest
 	{
 		PropertyConfigurator.configure("log4j.properties");
 		TestData.populateTestData();
-		pmi = new DefaultPmiCalculator(Corpus.TEST_ARTICLES);
+		pmi = new DefaultPmiCalculator("localhost", Corpus.TEST_ARTICLES);
 	}
 
 	@Test

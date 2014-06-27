@@ -191,7 +191,7 @@ public class DefaultPmiCalculator implements PmiCalculator
 		BasicQuery query = new BasicQuery("{ $or : [ { word1 : '" + word1 + "', word2 : '" + word2 + "' }, { word1 : '" + word2 + "', word2 : '"
 				+ word1 + "' } ] }");
 		WordDistance wordDistance = mongoOperations.findOne(query, WordDistance.class);
-
+						
 		if (wordDistance == null)
 		{
 			logger.info("Word {} and {} does not exists in lookup table", word1, word2);
