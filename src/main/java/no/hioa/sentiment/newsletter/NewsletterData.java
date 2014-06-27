@@ -44,6 +44,7 @@ public class NewsletterData
 	private static final Logger	consoleLogger	= LoggerFactory.getLogger("stdoutLogger");
 
 	private ArticleRepository	repository;
+	private String				host			= null;
 
 	public static void main(String[] args) throws Exception
 	{
@@ -56,12 +57,13 @@ public class NewsletterData
 		// new NewsletterData().removeStopWords(new File("target/topwords.txt"), new File("target/topwords.stripped.txt"),
 		// SeedProvider.getStopWords());
 		// new NewsletterData().findArticlesForWord("målemani");
-		new NewsletterData().calculatePmiForAllWords(new File("target/topwords.stripped.txt"), 10000, 100);
+		new NewsletterData(args[0]).calculatePmiForAllWords(new File("target/topwords.stripped.txt"), 10000, 100);
 	}
 
-	public NewsletterData() throws UnknownHostException
+	public NewsletterData(String host) throws UnknownHostException
 	{
-		MongoOperations mongoOperations = MongoProvider.getMongoProvider("s1", Corpus.NEWSPAPER_ARTICLES);
+		this.host = host;
+		MongoOperations mongoOperations = MongoProvider.getMongoProvider(host, Corpus.NEWSPAPER_ARTICLES);
 
 		RepositoryFactorySupport factory = new MongoRepositoryFactory(mongoOperations);
 		this.repository = factory.getRepository(ArticleRepository.class);
@@ -90,7 +92,7 @@ public class NewsletterData
 		List<String> seedWords = SeedProvider.getPositiveWords();
 		seedWords.addAll(SeedProvider.getNegativeWords());
 
-		DefaultPmiCalculator pmi = new DefaultPmiCalculator(Corpus.NEWSPAPER_ARTICLES);
+		DefaultPmiCalculator pmi = new DefaultPmiCalculator(host, Corpus.NEWSPAPER_ARTICLES);
 
 		PrintWriter pmiWritter = new PrintWriter("target/pmi.d" + maxDistance + ".csv", "ISO-8859-1");
 		PrintWriter wordBlockOccurenceWritter = new PrintWriter("target/wordBlockOccurence.d" + maxDistance + ".csv", "ISO-8859-1");
@@ -144,7 +146,7 @@ public class NewsletterData
 			wordBlockOccurenceWritter.flush();
 			seedBlockOccurenceWritter.flush();
 			wordOccurenceWritter.flush();
-			
+
 			if (counter++ >= maxWords)
 			{
 				logger.info("Limit of words to calulcate pmi for has been reached");

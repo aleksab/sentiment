@@ -28,10 +28,10 @@ public class DefaultPmiCalculator implements PmiCalculator
 	private Corpus				corpus;
 	private MongoOperations		mongoOperations;
 
-	public DefaultPmiCalculator(Corpus corpus) throws UnknownHostException
+	public DefaultPmiCalculator(String host, Corpus corpus) throws UnknownHostException
 	{
 		this.corpus = corpus;
-		this.mongoOperations = MongoProvider.getMongoProvider(corpus);
+		this.mongoOperations = MongoProvider.getMongoProvider(host, corpus);
 	}
 
 	@Override
