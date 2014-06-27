@@ -214,10 +214,10 @@ public class DefaultPmiCalculator implements PmiCalculator
 			wordDistance = new WordDistance(word1, word2, distances);
 			mongoOperations.insert(wordDistance);
 
-			logger.info("Word {} and {} have these distances: {}", word1, word2, distances);
+			logger.info("Word {} and {} have {} occurences", word1, word2, distances.size());
 		}
 		else
-			logger.info("Word {} and {} with these distance {} found in lookup table", word1, word2, wordDistance.getDistances());
+			logger.info("Word {} and {} with occurences {} found in lookup table", word1, word2, wordDistance.getDistances().size());
 
 		return wordDistance;
 	}
@@ -280,11 +280,11 @@ public class DefaultPmiCalculator implements PmiCalculator
 			wordBlock = new WordBlock(word, sizes);
 			mongoOperations.insert(wordBlock);
 
-			logger.info("Sizes for {} are {}", word, wordBlock.getSizes());
+			logger.info("There are {} occurences for {}", wordBlock.getSizes().size(), word);
 
 		}
 		else
-			logger.info("Word {} found in lookup table with sizes {}", word, wordBlock.getSizes());
+			logger.info("Word {} found in lookup table with occurences {}", word, wordBlock.getSizes().size());
 
 		return wordBlock;
 	}

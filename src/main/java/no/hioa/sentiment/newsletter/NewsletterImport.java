@@ -43,13 +43,19 @@ public class NewsletterImport
 	@Parameter(names = "-p", description = "Print statistics")
 	private boolean				printStats		= false;
 
+	@Parameter(names = "-initDb", description = "Setup database and collection")
+	private boolean				initDb			= false;
+
+	@Parameter(names = "-noauth", description = "Do not use authentication")
+	private boolean				noAuth			= true;
+
 	@Parameter(names = "-host", description = "Host to mongo server", required = true)
 	private String				mongoHost;
 
-	@Parameter(names = "-username", description = "Username of mongo user", required = true)
+	@Parameter(names = "-username", description = "Username of mongo user")
 	private String				mongoUsername;
 
-	@Parameter(names = "-password", description = "Password for mongo user", required = true)
+	@Parameter(names = "-password", description = "Password for mongo user")
 	private String				mongoPassword;
 
 	@Parameter(names = "-authdb", description = "Name of database where user is defined")
@@ -67,11 +73,16 @@ public class NewsletterImport
 	public NewsletterImport(String[] args) throws UnknownHostException
 	{
 		JCommander commander = new JCommander(this, args);
-		// mongoOperations = MongoProvider.getMongoProvider(mongoHost, dbName, mongoUsername, mongoPassword);
-		mongoOperations = MongoProvider.getMongoProvider(Corpus.NEWSPAPER_ARTICLES);
+
+		if (noAuth)
+			mongoOperations = MongoProvider.getMongoProvider(mongoHost, Corpus.NEWSPAPER_ARTICLES);
+		else
+			mongoOperations = MongoProvider.getMongoProvider(mongoHost, dbName, mongoUsername, mongoPassword);
 
 		if (printStats)
 			printStats();
+		else if (initDb)
+			initDb();
 		else if (version1folder == null && version2folder == null)
 			commander.usage();
 		else
@@ -95,6 +106,14 @@ public class NewsletterImport
 		List<Article> arts = mongoOperations.find(query, Article.class);
 		for (Article art : arts)
 			consoleLogger.info(art.getContent());
+	}
+	
+	public void initDb()
+	{
+		if (!mongoOperations.collectionExists(Article.class))
+		{
+			mongoOperations.createCollection(Article.class);
+		}
 	}
 
 	public long importAllArticlesVersion1(File folder)
@@ -156,7 +175,7 @@ public class NewsletterImport
 			else
 			{
 				if (file.getName().endsWith("html4"))
-				{					
+				{
 					List<Article> articles = extractArticlesVersion2(file);
 					totalArticles += articles.size();
 
