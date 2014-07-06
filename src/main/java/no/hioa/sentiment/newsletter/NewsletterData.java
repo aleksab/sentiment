@@ -58,6 +58,7 @@ public class NewsletterData
 		// SeedProvider.getStopWords());
 		// new NewsletterData().findArticlesForWord("målemani");
 		new NewsletterData(args[0]).calculatePmiForAllWords(new File("target/topwords.stripped.txt"), 10000, 100);
+		//new NewsletterData(args[0]).makeNorwegianClearScript(new File("target/topwords.stripped.txt"), 10000);
 	}
 
 	public NewsletterData(String host) throws UnknownHostException
@@ -69,6 +70,51 @@ public class NewsletterData
 		this.repository = factory.getRepository(ArticleRepository.class);
 	}
 
+	public void makeNorwegianClearScript(File wordFile, long maxWords) throws UnknownHostException, FileNotFoundException,
+	UnsupportedEncodingException
+	{
+		List<String> targetWords = new LinkedList<>();
+
+		int counter = 1;
+		try (Scanner scanner = new Scanner(new FileInputStream(wordFile), "ISO-8859-1"))
+		{
+			while (scanner.hasNextLine())
+			{
+				String input = scanner.nextLine().toLowerCase();
+				targetWords.add(input.split(":")[0]);
+				
+				if (counter++ == maxWords)
+					break;				
+			}
+		}
+		catch (Exception ex)
+		{
+			ex.printStackTrace();
+		}
+
+		consoleLogger.info("Found {} words", targetWords.size());
+		
+		List<String> noWords = new LinkedList<>();
+		
+		for (String targetWord : targetWords)
+		{
+			if (targetWord.contains("æ") || targetWord.contains("ø") || targetWord.contains("å"))
+				noWords.add(targetWord);
+		}
+
+		consoleLogger.info("Found {} norwegian words", noWords.size());
+		
+		PrintWriter noWritter = new PrintWriter("target/clear.no.js", "UTF-8");
+		
+		for (String noWord : noWords)
+		{
+			noWritter.append("print(JSON.stringify(db.wordBlock.remove({ word : '" + noWord + "' })));\n");
+			noWritter.append("print(JSON.stringify(db.wordOccurence.remove({ word : '" + noWord + "' })));\n");
+			noWritter.append("print(JSON.stringify(db.wordDistance.remove({ $or : [ { word1 : '" + noWord + "' }, { word2 : '" + noWord + "'} ] })));\n");
+		}		
+		noWritter.close();
+	}
+	
 	public void calculatePmiForAllWords(File wordFile, long maxWords, int maxDistance) throws UnknownHostException, FileNotFoundException,
 			UnsupportedEncodingException
 	{
