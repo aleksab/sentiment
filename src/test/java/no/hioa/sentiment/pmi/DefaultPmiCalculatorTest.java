@@ -46,6 +46,12 @@ public class DefaultPmiCalculatorTest
 	{
 		Assert.assertEquals(2, pmi.findWordOccurence("absolutt"));
 	}
+	
+	@Test
+	public void testFindWordOccurence4() throws Exception
+	{
+		Assert.assertEquals(1, pmi.findWordOccurence("nå"));
+	}
 
 	@Test
 	public void testFindWordOccurenceWithBlock() throws Exception
