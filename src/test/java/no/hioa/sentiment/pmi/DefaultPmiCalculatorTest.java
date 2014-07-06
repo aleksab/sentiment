@@ -82,6 +82,12 @@ public class DefaultPmiCalculatorTest
 	{
 		Assert.assertEquals(4, pmi.findAllWordDistances("er", "men").getDistances().size());
 	}
+	
+	@Test
+	public void testFindAllWordDistances3() throws Exception
+	{
+		Assert.assertEquals(1, pmi.findAllWordDistances("nå", "fantastiske").getDistances().size());
+	}
 
 	@Test
 	public void testFindWordDistance() throws Exception
@@ -93,6 +99,12 @@ public class DefaultPmiCalculatorTest
 	public void testFindWordDistance2() throws Exception
 	{
 		Assert.assertEquals(1, pmi.findWordDistance("absolutt", "fantastiske", 4));
+	}
+	
+	@Test
+	public void testFindWordDistance3() throws Exception
+	{
+		Assert.assertEquals(1, pmi.findWordDistance("nå", "fantastiske", 10));
 	}
 
 	@Test
@@ -111,6 +123,12 @@ public class DefaultPmiCalculatorTest
 	public void testCalculatePmiForBlocks3() throws Exception
 	{
 		Assert.assertEquals(new BigDecimal("0.0000"), pmi.calculatePmiForBlocks("asdasfafa", "fantastiske", 50).result.setScale(4, RoundingMode.UP));
+	}
+	
+	@Test
+	public void testCalculatePmiForBlocks4() throws Exception
+	{
+		Assert.assertEquals(new BigDecimal("2.1858"), pmi.calculatePmiForBlocks("nå", "fantastiske", 10).result.setScale(4, RoundingMode.UP));
 	}
 
 	@Test

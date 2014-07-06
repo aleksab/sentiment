@@ -4,3 +4,9 @@
 target
 .version
 *.log
+/sentiment.log.1
+/sentiment.log.2
+/sentiment.log.3
+/sentiment.log.4
+/sentiment.log.5
+/sentiment.log.6

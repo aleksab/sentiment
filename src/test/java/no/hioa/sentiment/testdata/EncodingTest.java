@@ -37,7 +37,6 @@ public class EncodingTest
 	public void testFindNorwegianText2() throws Exception
 	{		
 		List<Article> articles = mongoOperations.findAll(Article.class);
-		Assert.assertEquals(2, articles.size());
-		System.out.println(articles.get(0).getContent());
+		Assert.assertEquals(2, articles.size());		
 	}
 }

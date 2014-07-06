@@ -50,7 +50,7 @@ public class DefaultPmiCalculator implements PmiCalculator
 	 */
 	public BigDecimal calculatePmiForDocuments(String word, String seedWord, int maxDistance)
 	{
-		BigDecimal wordBlockOccurence = new BigDecimal(findWordDistance(word, seedWord, maxDistance)).setScale(10);
+		BigDecimal wordBlockOccurence = new BigDecimal(findWordDistance(word, seedWord, -1)).setScale(10);
 		BigDecimal wordOccurence = new BigDecimal(findWordOccurence(word)).setScale(10);
 		BigDecimal seedOccurence = new BigDecimal(findWordOccurence(seedWord)).setScale(10);
 		BigDecimal totalWords = new BigDecimal(getTotalWords());
@@ -312,7 +312,7 @@ public class DefaultPmiCalculator implements PmiCalculator
 			BasicQuery textQuery = new BasicQuery("{ $text: { $search: '" + word + "' } }");
 			String mapFunction = getJsFileContent(new File("src/main/resources/no/hioa/sentiment/pmi/map_count.js")).replaceAll("%WORD%", word);
 			String reduceFunction = getJsFileContent(new File("src/main/resources/no/hioa/sentiment/pmi/reduce.js"));
-
+			
 			MapReduceResults<DistanceResult> results = mongoOperations.mapReduce(textQuery, corpus.getCollectionContentName(), mapFunction,
 					reduceFunction, DistanceResult.class);
 
