@@ -112,4 +112,66 @@ public class DefaultSentimentScore implements SentimentScore
 
 		return new Score(review.getId(), review.getRating(), sentimentScore);
 	}
+	
+	String calculateComplexSentimentScoreWithShifter(List<SentimentWord> sentimentList, List<String> shifters, Review review)
+	{
+		logger.info("Calculating complex sentiment score for review {}", review.getId());
+
+		String output = "";
+		BigDecimal totalScore = BigDecimal.ZERO.setScale(5);		
+		String[] words = WordUtil.getWords(review.getContent());
+
+		boolean shouldShift = false;
+		int wordsSinceShifter = -1;
+		for (String word : words)
+		{
+			BigDecimal wordScore = BigDecimal.ZERO.setScale(2);
+			
+			// normalization to lowercase
+			word = word.toLowerCase();
+
+			// do we have a shifter
+			for (String shifter : shifters)
+			{
+				if (word.equalsIgnoreCase(shifter.toLowerCase()))
+				{
+					shouldShift = !shouldShift;
+					wordsSinceShifter = 0;
+					break;
+				}
+			}
+
+			if (wordsSinceShifter > 3)
+				shouldShift = false;
+			else if (wordsSinceShifter != -1)
+				wordsSinceShifter++;
+
+			for (SentimentWord sWord : sentimentList)
+			{
+				if (word.equalsIgnoreCase(sWord.getWord()))
+				{
+					wordScore = sWord.getRating();
+
+					if (shouldShift && wordsSinceShifter <= 3)
+						wordScore = wordScore.negate();
+					
+					totalScore = totalScore.add(wordScore);
+
+					// we assume that a sentiment word can only occur once
+					break;
+				}
+			}
+			
+			output += word + "(" + wordScore + ") ";
+		}
+
+		output += "\nTotal word score: " + totalScore;		
+		if (words.length > 0)
+			totalScore = totalScore.divide(new BigDecimal(words.length), RoundingMode.UP);
+
+		output += "\nTotal words: " + words.length;
+		output += "\nTotal score: " + totalScore;
+		
+		return output;
+	}
 }

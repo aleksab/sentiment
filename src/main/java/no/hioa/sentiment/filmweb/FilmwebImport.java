@@ -6,6 +6,7 @@ import java.net.UnknownHostException;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Unmarshaller;
 
+import no.hioa.sentiment.service.Corpus;
 import no.hioa.sentiment.service.MongoProvider;
 
 import org.apache.log4j.PropertyConfigurator;
@@ -31,17 +32,20 @@ public class FilmwebImport
 	@Parameter(names = "-p", description = "Print statistics")
 	private boolean				printStats		= false;
 
-	@Parameter(names = "-host", description = "Host to mongo server", required = true)
+	@Parameter(names = "-host", description = "Host to mongo server")
 	private String				mongoHost;
 
-	@Parameter(names = "-username", description = "Username of mongo user", required = true)
+	@Parameter(names = "-username", description = "Username of mongo user")
 	private String				mongoUsername;
 
-	@Parameter(names = "-password", description = "Password for mongo user", required = true)
+	@Parameter(names = "-password", description = "Password for mongo user")
 	private String				mongoPassword;
 
 	@Parameter(names = "-authdb", description = "Name of database where user is defined")
 	private String				mongoAuthDb		= "admin";
+
+	@Parameter(names = "-noauth", description = "Do not use authentication")
+	private boolean				noAuth			= true;
 
 	private MongoOperations		mongoOperations;
 
@@ -55,7 +59,11 @@ public class FilmwebImport
 	public FilmwebImport(String[] args) throws UnknownHostException
 	{
 		JCommander commander = new JCommander(this, args);
-		mongoOperations = MongoProvider.getMongoProvider(mongoHost, dbName, mongoUsername, mongoPassword);
+		
+		if (noAuth)
+			mongoOperations = MongoProvider.getMongoProvider(mongoHost, Corpus.MOVIE_REVIEWS);
+		else
+			mongoOperations = MongoProvider.getMongoProvider(mongoHost, dbName, mongoUsername, mongoPassword);
 
 		if (printStats)
 			printStats();

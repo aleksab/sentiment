@@ -6,7 +6,7 @@ public class WordUtil
 {
 	public static String[] getWords(String input)
 	{
-		input = input.replaceAll("[^a-zA-ZøæåØÆÅ\\s]", " ");
+		input = input.replaceAll("[^a-zA-ZøæåØÆÅ\\-\\s]", " ");
 		return StringUtils.split(input, " ");
 	}
 }
