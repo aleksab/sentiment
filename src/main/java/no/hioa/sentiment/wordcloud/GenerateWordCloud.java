@@ -33,7 +33,7 @@ public class GenerateWordCloud
 	{
 		List<String> soPmi = new LinkedList<>();
 
-		try (Scanner scanner = new Scanner(new FileInputStream(pmiFile), "UTF-8"))
+		try (Scanner scanner = new Scanner(new FileInputStream(pmiFile), "ISO-8859-1"))
 		{
 			// skip first 4 lines
 			for (int i = 0; i < 4; i++)
@@ -56,7 +56,7 @@ public class GenerateWordCloud
 			ex.printStackTrace();
 		}
 
-		PrintWriter writter = new PrintWriter(soPmiFile, "UTF-8");
+		PrintWriter writter = new PrintWriter(soPmiFile, "ISO-8859-1");
 		for (String pmi : soPmi)
 		{
 			writter.append(pmi + "\n");
