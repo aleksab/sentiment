@@ -21,7 +21,9 @@ public class GenerateWordCloud
 	public static void main(String[] args) throws FileNotFoundException, UnsupportedEncodingException
 	{
 		// TODO Auto-generated method stub
-		new GenerateWordCloud().generateSoPMI(new File("src/main/resources/no/hioa/sentiment/wordcloud/pmi.d100.csv"), new File("target/sopmi.txt"));
+		new GenerateWordCloud().generateSoPMI(new File("src/main/resources/no/hioa/sentiment/wordcloud/pmi.d100.csv"), new File("target/sopmi-d100.txt"));
+		new GenerateWordCloud().generateSoPMI(new File("src/main/resources/no/hioa/sentiment/wordcloud/pmi.d10.csv"), new File("target/sopmi-d10.txt"));
+		new GenerateWordCloud().generateSoPMI(new File("src/main/resources/no/hioa/sentiment/wordcloud/pmi.d5.csv"), new File("target/sopmi-d5.txt"));
 	}
 
 	public void generateWordCloud()
