@@ -142,4 +142,21 @@ public class DefaultPmiCalculatorTest
 	{
 		Assert.assertEquals(new BigDecimal("5.5078"), pmi.calculatePmiForDocuments("absolutt", "fantastiske", 50).setScale(4, RoundingMode.UP));
 	}
+	
+	@Test
+	public void testCalculateWithDecimals() throws Exception
+	{
+		BigDecimal wordBlockOccurence = new BigDecimal("47").setScale(15, RoundingMode.UP);
+		BigDecimal seedBlockOccurence = new BigDecimal("5374700").setScale(15, RoundingMode.UP);
+		BigDecimal wordOccurence = new BigDecimal("14345").setScale(15, RoundingMode.UP);
+		BigDecimal totalWords = new BigDecimal("1416378328").setScale(15, RoundingMode.UP);
+		
+		BigDecimal dividend = wordBlockOccurence.divide(seedBlockOccurence, RoundingMode.UP);
+		BigDecimal divisor = wordOccurence.divide(totalWords, RoundingMode.UP);
+		BigDecimal result = dividend.divide(divisor, RoundingMode.UP);
+		
+		result = new BigDecimal(Math.log(result.floatValue()) / Math.log(2)).setScale(5, RoundingMode.UP);
+
+		Assert.assertEquals(new BigDecimal("-0.21187"), result);
+	}
 }

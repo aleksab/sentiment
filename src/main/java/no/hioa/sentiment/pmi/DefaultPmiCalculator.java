@@ -50,9 +50,9 @@ public class DefaultPmiCalculator implements PmiCalculator
 	 */
 	public BigDecimal calculatePmiForDocuments(String word, String seedWord, int maxDistance)
 	{
-		BigDecimal wordBlockOccurence = new BigDecimal(findWordDistance(word, seedWord, -1)).setScale(10);
-		BigDecimal wordOccurence = new BigDecimal(findWordOccurence(word)).setScale(10);
-		BigDecimal seedOccurence = new BigDecimal(findWordOccurence(seedWord)).setScale(10);
+		BigDecimal wordBlockOccurence = new BigDecimal(findWordDistance(word, seedWord, -1)).setScale(15, RoundingMode.UP);
+		BigDecimal wordOccurence = new BigDecimal(findWordOccurence(word)).setScale(15, RoundingMode.UP);
+		BigDecimal seedOccurence = new BigDecimal(findWordOccurence(seedWord)).setScale(15, RoundingMode.UP);
 		BigDecimal totalWords = new BigDecimal(getTotalWords());
 
 		BigDecimal dividend = wordBlockOccurence.divide(totalWords, RoundingMode.UP);
@@ -76,9 +76,9 @@ public class DefaultPmiCalculator implements PmiCalculator
 	 */
 	public PmiResult calculatePmiForBlocks(String word, String seedWord, int maxDistance)
 	{
-		BigDecimal wordBlockOccurence = new BigDecimal(findWordDistance(word, seedWord, maxDistance)).setScale(5, RoundingMode.UP);
-		BigDecimal seedBlockOccurence = new BigDecimal(findWordOccurenceWithBlock(seedWord, maxDistance) * maxDistance).setScale(5, RoundingMode.UP);
-		BigDecimal wordOccurence = new BigDecimal(findWordOccurence(word)).setScale(5, RoundingMode.UP);
+		BigDecimal wordBlockOccurence = new BigDecimal(findWordDistance(word, seedWord, maxDistance)).setScale(15, RoundingMode.UP);
+		BigDecimal seedBlockOccurence = new BigDecimal(findWordOccurenceWithBlock(seedWord, maxDistance) * maxDistance).setScale(15, RoundingMode.UP);
+		BigDecimal wordOccurence = new BigDecimal(findWordOccurence(word)).setScale(15, RoundingMode.UP);
 		BigDecimal totalWords = new BigDecimal(getTotalWords());
 
 		BigDecimal dividend = BigDecimal.ZERO;
