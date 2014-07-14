@@ -57,7 +57,10 @@ public class NewsletterData
 		// new NewsletterData().removeStopWords(new File("target/topwords.txt"), new File("target/topwords.stripped.txt"),
 		// SeedProvider.getStopWords());
 		// new NewsletterData().findArticlesForWord("målemani");
-		new NewsletterData(args[0]).calculatePmiForAllWords(new File("target/topwords.stripped.txt"), 10000, 100);
+		new NewsletterData(args[0]).calculatePmiForAllWords(new File("target/topwords.stripped.txt"), 5000, 5);
+		new NewsletterData(args[0]).calculatePmiForAllWords(new File("target/topwords.stripped.txt"), 5000, 10);
+		new NewsletterData(args[0]).calculatePmiForAllWords(new File("target/topwords.stripped.txt"), 5000, 100);
+		
 		//new NewsletterData(args[0]).makeNorwegianClearScript(new File("target/topwords.stripped.txt"), 10000);
 	}
 
