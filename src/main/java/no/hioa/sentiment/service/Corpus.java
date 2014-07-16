@@ -2,13 +2,14 @@ package no.hioa.sentiment.service;
 
 import no.hioa.sentiment.filmweb.Review;
 import no.hioa.sentiment.newsletter.Article;
+import no.hioa.sentiment.product.ProductReview;
 
 import org.apache.commons.lang.StringUtils;
 
 public enum Corpus
 {
-	MOVIE_REVIEWS("MOVIE_REVIEWS", "filmweb", "review", Review.class), NEWSPAPER_ARTICLES("NEWSPAPER_ARTICLES", "newspaper", "article", Article.class), TEST_ARTICLES(
-			"TEST_ARTICLES", "test", "article", Article.class);
+	MOVIE_REVIEWS("MOVIE_REVIEWS", "filmweb", "review", Review.class), PRODUCT_REVIEWS("PRODUCT_REVIEWS", "product", "review", ProductReview.class), NEWSPAPER_ARTICLES(
+			"NEWSPAPER_ARTICLES", "newspaper", "article", Article.class), TEST_ARTICLES("TEST_ARTICLES", "test", "article", Article.class);
 
 	private String name;
 	private String dbName;
