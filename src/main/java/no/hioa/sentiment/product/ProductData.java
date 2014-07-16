@@ -21,7 +21,6 @@ import java.util.Scanner;
 
 import no.hioa.sentiment.service.Corpus;
 import no.hioa.sentiment.service.MongoProvider;
-import no.hioa.sentiment.service.SeedProvider;
 import no.hioa.sentiment.util.MapUtil;
 import no.hioa.sentiment.util.WordUtil;
 
@@ -48,7 +47,8 @@ public class ProductData
 
 		//new ProductData("localhost").extractMostCommonWords(new File("target/topwords.txt"), Collections.<String> emptyList(), -1);
 		//new ProductData("localhost").removeStopWords(new File("target/topwords.txt"), new File("target/topwords.stripped.txt"),SeedProvider.getStopWords());
-		new ProductData("localhost").filterFile(new File("target/topwords.stripped.txt"), new File("target/adjektiver_fullform.txt"));
+		//new ProductData("localhost").mergeFile(new File("target/topwords.stripped-filmweb.txt"), new File("target/topwords.stripped-produkt.txt"));
+		new ProductData("localhost").filterFile(new File("target/topwords.stripped.txt"), new File("target/adjektiver_fullform.txt"));		
 	}
 
 	public ProductData(String host) throws UnknownHostException
@@ -58,6 +58,44 @@ public class ProductData
 
 		RepositoryFactorySupport factory = new MongoRepositoryFactory(mongoOperations);
 		this.repository = factory.getRepository(ProductRepository.class);
+	}
+	
+	public void mergeFile(File input, File input2) throws FileNotFoundException, UnsupportedEncodingException
+	{
+		List<String> words1 = getFileContent(input);
+		List<String> words2 = getFileContent(input2);	
+		
+		HashMap<String, Integer> words = new HashMap<>();
+		
+		for (String word : words1)
+		{
+			String w = word.split(":")[0];
+			Integer f = Integer.valueOf(word.split(":")[1]);
+			
+			words.put(w, f);
+		}
+				
+		for (String word : words2)
+		{
+			String w = word.split(":")[0];
+			Integer f = Integer.valueOf(word.split(":")[1]);
+			
+			if (words.containsKey(w))
+				words.put(w, words.get(w) + f);
+			else
+				words.put(w, f);
+		}
+		
+		Map<String, Integer> sorted = MapUtil.sortByValue(words);
+		
+		PrintWriter output = new PrintWriter("target/topwords.stripped.txt", "ISO-8859-1");
+		
+		for (String word : sorted.keySet())
+		{			
+			output.write(word + ":" + words.get(word) + "\n");
+		}
+		
+		output.close();
 	}
 	
 	public void filterFile(File input, File filter) throws FileNotFoundException, UnsupportedEncodingException
@@ -180,7 +218,7 @@ public class ProductData
 
 		return words;
 	}
-	
+		
 	void writeResultToFile(File output, Map<String, BigDecimal> occurences, int topWordsCount)
 	{
 		Path newFile = Paths.get(output.getAbsolutePath());
