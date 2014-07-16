@@ -3,7 +3,10 @@ package no.hioa.sentiment.product;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
@@ -11,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -43,7 +47,8 @@ public class ProductData
 		PropertyConfigurator.configure("log4j.properties");
 
 		//new ProductData("localhost").extractMostCommonWords(new File("target/topwords.txt"), Collections.<String> emptyList(), -1);
-		new ProductData("localhost").removeStopWords(new File("target/topwords.txt"), new File("target/topwords.stripped.txt"),SeedProvider.getStopWords());
+		//new ProductData("localhost").removeStopWords(new File("target/topwords.txt"), new File("target/topwords.stripped.txt"),SeedProvider.getStopWords());
+		new ProductData("localhost").filterFile(new File("target/topwords.stripped.txt"), new File("target/adjektiver_fullform.txt"));
 	}
 
 	public ProductData(String host) throws UnknownHostException
@@ -53,6 +58,22 @@ public class ProductData
 
 		RepositoryFactorySupport factory = new MongoRepositoryFactory(mongoOperations);
 		this.repository = factory.getRepository(ProductRepository.class);
+	}
+	
+	public void filterFile(File input, File filter) throws FileNotFoundException, UnsupportedEncodingException
+	{
+		List<String> words = getFileContent(input);
+		List<String> keepFilter = getFileContent(filter);		
+		
+		PrintWriter output = new PrintWriter("target/filtered.txt", "UTF-8");
+		
+		for (String word : words)
+		{			
+			if (keepFilter.contains(word.split(":")[0]))
+				output.write(word + "\n");
+		}
+		
+		output.close();
 	}
 
 	public void extractMostCommonWords(File output, List<String> stopWords, int topWordsCount)
@@ -138,6 +159,26 @@ public class ProductData
 
 		logger.info("Saving results to file " + output);
 		writeResultToFile(output, sorted, -1);
+	}
+	
+	List<String> getFileContent(File file)
+	{
+		List<String> words = new LinkedList<>();
+
+		try (Scanner scanner = new Scanner(new FileInputStream(file), "ISO-8859-1"))
+		{
+			while (scanner.hasNextLine())
+			{
+				String input = scanner.nextLine().toLowerCase();
+				words.add(input);
+			}
+		}
+		catch (Exception ex)
+		{
+			logger.error("Could not read content for file " + file.getAbsolutePath(), ex);
+		}
+
+		return words;
 	}
 	
 	void writeResultToFile(File output, Map<String, BigDecimal> occurences, int topWordsCount)
