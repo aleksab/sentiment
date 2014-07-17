@@ -1,63 +1,141 @@
 package no.hioa.sentiment.forum;
 
+import java.io.File;
 import java.io.PrintWriter;
+import java.net.UnknownHostException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
+import no.hioa.sentiment.service.Corpus;
+import no.hioa.sentiment.service.MongoProvider;
 import no.hioa.sentiment.util.DatabaseUtilities;
 
 import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.mongodb.core.MongoOperations;
+import org.springframework.data.mongodb.core.query.BasicQuery;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.jdbc.core.simple.ParameterizedRowMapper;
+
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
 
 public class ForumImport
 {
 	private static final Logger	consoleLogger	= LoggerFactory.getLogger("stdoutLogger");
 
+	@Parameter(names = "-db", description = "Mongo database name")
+	private String				dbName			= "forum";
+
+	@Parameter(names = "-xml", description = "Path to xml file")
+	private String				xmlFile;
+
+	@Parameter(names = "-p", description = "Print statistics")
+	private boolean				printStats		= false;
+
+	@Parameter(names = "-host", description = "Host to mongo server")
+	private String				mongoHost;
+
+	@Parameter(names = "-username", description = "Username of mongo user")
+	private String				mongoUsername;
+
+	@Parameter(names = "-password", description = "Password for mongo user")
+	private String				mongoPassword;
+
+	@Parameter(names = "-authdb", description = "Name of database where user is defined")
+	private String				mongoAuthDb		= "admin";
+
+	@Parameter(names = "-noauth", description = "Do not use authentication")
+	private boolean				noAuth			= true;
+
+	private MongoOperations		mongoOperations	= null;
 	private JdbcTemplate		jdbcTemplate	= null;
 
 	public static void main(String[] args) throws Exception
 	{
 		PropertyConfigurator.configure("log4j.properties");
 
-		JdbcTemplate jdbcTemplate = DatabaseUtilities.getMySqlTemplate("localhost", "nettrapport_forum", "root", "power27");
-		new ForumImport(jdbcTemplate).generateXml();
+		new ForumImport(args).generateXml();
 	}
 
-	public ForumImport(JdbcTemplate jdbcTemplate)
+	public ForumImport(String[] args) throws UnknownHostException
 	{
-		this.jdbcTemplate = jdbcTemplate;
+		JCommander commander = new JCommander(this, args);
+
+		if (noAuth)
+			mongoOperations = MongoProvider.getMongoProvider(mongoHost, Corpus.FORUM_POSTS);
+		else
+			mongoOperations = MongoProvider.getMongoProvider(mongoHost, dbName, mongoUsername, mongoPassword);
+
+		if (printStats)
+			printStats();
+		else if (xmlFile == null)
+			commander.usage();
+		else
+		{
+			long result = insertXmlIntoMongo(new File(xmlFile));
+			consoleLogger.info("{} forum posts have been imported", result);
+		}
+
+	}
+
+	public void printStats()
+	{
+		long sites = mongoOperations.count(new Query(), Site.class);
+		consoleLogger.info("Number of sites in {} is {}", dbName, sites);
+
+		long forums = mongoOperations.count(new Query(), Forum.class);
+		consoleLogger.info("Number of forums in {} is {}", dbName, forums);
+
+		long topics = mongoOperations.count(new Query(), Topic.class);
+		consoleLogger.info("Number of topics in {} is {}", dbName, topics);
+
+		long posts = mongoOperations.count(new Query(), Post.class);
+		consoleLogger.info("Number of posts in {} is {}", dbName, posts);
+
+		BasicQuery query = new BasicQuery("{ rating : 6 }");
+		Post post = mongoOperations.findOne(query, Post.class);
+		consoleLogger.info(post.getSiteId() + ", " + post.getForumId() + ", " + post.getTopicId() + ", " + post.getAuthor() + " - "
+				+ post.getContent());
+	}
+
+	public long insertXmlIntoMongo(File xmlFile)
+	{
+		
+		return 0;
 	}
 
 	public void generateXml() throws Exception
 	{
+		jdbcTemplate = DatabaseUtilities.getMySqlTemplate("localhost", "nettrapport_forum", "root", "power27");
+
 		List<Site> sites = getSites();
 		consoleLogger.info("There are {} sites", sites.size());
 
 		for (Site site : sites)
 		{
-			PrintWriter xmlWritter = new PrintWriter("target/" + site.name + "-data.xml", "UTF-8");
+			PrintWriter xmlWritter = new PrintWriter("target/" + site.getName() + "-data.xml", "UTF-8");
 			xmlWritter.write(getXmlHeader());
 			xmlWritter.write(getXmlStartTag("site"));
-			xmlWritter.write(getXmlTag("name", site.name));
+			xmlWritter.write(getXmlTag("name", site.getName()));
 			xmlWritter.write(getXmlStartTag("forums"));
 
-			List<Forum> forums = getForums(site.id);
-			consoleLogger.info("There are {} forums for site {}", forums.size(), site.name);
+			List<Forum> forums = getForums(site.getId());
+			consoleLogger.info("There are {} forums for site {}", forums.size(), site.getName());
 
 			for (Forum forum : forums)
 			{
 				xmlWritter.write(getXmlStartTag("forum"));
-				xmlWritter.write(getXmlTag("link", forum.link));
-				xmlWritter.write(getXmlTag("title", forum.title));
+				xmlWritter.write(getXmlTag("link", forum.getLink()));
+				xmlWritter.write(getXmlTag("title", forum.getTitle()));
 
-				consoleLogger.info("Adding topics for forum: {}", forum.title);
+				consoleLogger.info("Adding topics for forum: {}", forum.getLink());
 				xmlWritter.write(getXmlStartTag("topics"));
-				printTopics(site.id, forum.id, xmlWritter);
+				printTopics(site.getId(), forum.getId(), xmlWritter);
 				xmlWritter.write(getXmlEndTag("topics"));
 
 				xmlWritter.write(getXmlEndTag("forum"));
@@ -106,7 +184,8 @@ public class ForumImport
 		{
 			public Forum mapRow(ResultSet rs, int rowNum) throws SQLException
 			{
-				return new Forum(rs.getInt("ForumId"), rs.getString("Link"), rs.getString("Title"));
+				// siteId will not be part of xml
+				return new Forum(rs.getInt("ForumId"), "", rs.getString("Link"), rs.getString("Title"));
 			}
 		}, siteId);
 	}
@@ -146,33 +225,5 @@ public class ForumImport
 				xmlWritter.write(getXmlEndTag("post"));
 			}
 		}, siteId, forumId, topicId);
-	}
-
-	private class Site
-	{
-		public int		id;
-		public String	name;
-
-		public Site(int id, String name)
-		{
-			super();
-			this.id = id;
-			this.name = name;
-		}
-	}
-
-	private class Forum
-	{
-		public int		id;
-		public String	link;
-		public String	title;
-
-		public Forum(int id, String link, String title)
-		{
-			super();
-			this.id = id;
-			this.link = link;
-			this.title = title;
-		}
 	}
 }
