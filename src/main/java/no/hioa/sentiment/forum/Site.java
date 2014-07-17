@@ -19,6 +19,12 @@ public class Site
 
 	}
 
+	public Site(String name)
+	{
+		super();
+		this.name = name;
+	}
+
 	public Site(int id, String name)
 	{
 		super();

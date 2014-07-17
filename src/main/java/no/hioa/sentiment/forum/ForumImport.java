@@ -2,7 +2,6 @@ package no.hioa.sentiment.forum;
 
 import java.io.File;
 import java.io.PrintWriter;
-import java.net.UnknownHostException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -23,6 +22,9 @@ import org.springframework.jdbc.core.simple.ParameterizedRowMapper;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
+import com.ximpleware.AutoPilot;
+import com.ximpleware.VTDGen;
+import com.ximpleware.VTDNav;
 
 public class ForumImport
 {
@@ -62,7 +64,7 @@ public class ForumImport
 		new ForumImport(args).generateXml();
 	}
 
-	public ForumImport(String[] args) throws UnknownHostException
+	public ForumImport(String[] args) throws Exception
 	{
 		JCommander commander = new JCommander(this, args);
 
@@ -103,12 +105,40 @@ public class ForumImport
 				+ post.getContent());
 	}
 
-	public long insertXmlIntoMongo(File xmlFile)
+	public long insertXmlIntoMongo(File xmlFile) throws Exception
 	{
+		final VTDGen vg = new VTDGen();
+		vg.parseFile(xmlFile.getAbsolutePath(), false);
+		
+		final VTDNav vn = vg.getNav();
+		final AutoPilot ap = new AutoPilot(vn);
+		ap.selectXPath("//site");
+		
+		while ((ap.evalXPath()) != -1)
+		{
+			String name = getNodeTextFast(vn, "name");
+			Site site = new Site(name);
+			consoleLogger.info("Site: {}", site);
+		}
 		
 		return 0;
 	}
 
+	private String getNodeTextFast(VTDNav vn, String xpathString) throws Exception
+	{
+		AutoPilot ap = new AutoPilot(vn);
+		ap.selectXPath(xpathString);
+
+		String output = "";
+		vn.push();
+		if (ap.evalXPath() != -1)
+			output = vn.toNormalizedString(vn.getText());
+		ap.resetXPath();
+		vn.pop();
+
+		return output;
+	}
+	
 	public void generateXml() throws Exception
 	{
 		jdbcTemplate = DatabaseUtilities.getMySqlTemplate("localhost", "nettrapport_forum", "root", "power27");
