@@ -6,7 +6,8 @@ import java.net.UnknownHostException;
 import java.util.LinkedList;
 import java.util.List;
 
-import no.hioa.sentiment.filmweb.Review;
+import no.hioa.sentiment.review.Review;
+import no.hioa.sentiment.review.ReviewType;
 import no.hioa.sentiment.service.Corpus;
 import no.hioa.sentiment.service.MongoProvider;
 import no.hioa.sentiment.util.WordUtil;
@@ -14,6 +15,7 @@ import no.hioa.sentiment.util.WordUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.mongodb.core.MongoOperations;
+import org.springframework.data.mongodb.core.query.BasicQuery;
 
 /**
  * Default implementation of sentiment score.
@@ -35,9 +37,10 @@ public class DefaultSentimentScore implements SentimentScore
 	 * fetching all.
 	 */
 	@Override
-	public List<Score> getSentimentScore(List<SentimentWord> sentimentList, List<String> shifters)
+	public List<Score> getSentimentScore(ReviewType type, List<SentimentWord> sentimentList, List<String> shifters)
 	{
-		List<Review> reviews = mongoOperations.findAll(Review.class);
+		BasicQuery query = new BasicQuery("{ type : '" + type.getName().toUpperCase() + "' }");
+		List<Review> reviews = mongoOperations.find(query, Review.class);
 		List<Score> scores = new LinkedList<>();
 
 		for (Review review : reviews)

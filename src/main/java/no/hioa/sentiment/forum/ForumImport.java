@@ -11,6 +11,7 @@ import no.hioa.sentiment.service.MongoProvider;
 import no.hioa.sentiment.util.DatabaseUtilities;
 
 import org.apache.log4j.PropertyConfigurator;
+import org.jsoup.Jsoup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.mongodb.core.MongoOperations;
@@ -54,6 +55,9 @@ public class ForumImport
 	@Parameter(names = "-noauth", description = "Do not use authentication")
 	private boolean				noAuth			= true;
 
+	@Parameter(names = "-generate", description = "Generate xml from database")
+	private boolean				generate		= false;
+
 	private MongoOperations		mongoOperations	= null;
 	private JdbcTemplate		jdbcTemplate	= null;
 
@@ -61,7 +65,7 @@ public class ForumImport
 	{
 		PropertyConfigurator.configure("log4j.properties");
 
-		new ForumImport(args).generateXml();
+		new ForumImport(args);
 	}
 
 	public ForumImport(String[] args) throws Exception
@@ -75,6 +79,8 @@ public class ForumImport
 
 		if (printStats)
 			printStats();
+		else if (generate)
+			generateXml();
 		else if (xmlFile == null)
 			commander.usage();
 		else
@@ -82,7 +88,6 @@ public class ForumImport
 			long result = insertXmlIntoMongo(new File(xmlFile));
 			consoleLogger.info("{} forum posts have been imported", result);
 		}
-
 	}
 
 	public void printStats()
@@ -113,14 +118,16 @@ public class ForumImport
 		final VTDNav vn = vg.getNav();
 		final AutoPilot ap = new AutoPilot(vn);
 		ap.selectXPath("//site");
-		
+
 		while ((ap.evalXPath()) != -1)
 		{
 			String name = getNodeTextFast(vn, "name");
 			Site site = new Site(name);
 			consoleLogger.info("Site: {}", site);
+			
+			
 		}
-		
+
 		return 0;
 	}
 
@@ -138,7 +145,7 @@ public class ForumImport
 
 		return output;
 	}
-	
+
 	public void generateXml() throws Exception
 	{
 		jdbcTemplate = DatabaseUtilities.getMySqlTemplate("localhost", "nettrapport_forum", "root", "power27");
@@ -148,7 +155,7 @@ public class ForumImport
 
 		for (Site site : sites)
 		{
-			PrintWriter xmlWritter = new PrintWriter("target/" + site.getName() + "-data.xml", "UTF-8");
+			PrintWriter xmlWritter = new PrintWriter("target/" + site.getName() + "-data.xml", "ISO-8859-1");
 			xmlWritter.write(getXmlHeader());
 			xmlWritter.write(getXmlStartTag("site"));
 			xmlWritter.write(getXmlTag("name", site.getName()));
@@ -169,6 +176,8 @@ public class ForumImport
 				xmlWritter.write(getXmlEndTag("topics"));
 
 				xmlWritter.write(getXmlEndTag("forum"));
+
+				break;
 			}
 
 			xmlWritter.write(getXmlEndTag("forums"));
@@ -222,7 +231,7 @@ public class ForumImport
 
 	void printTopics(final int siteId, final int forumId, final PrintWriter xmlWritter)
 	{
-		jdbcTemplate.query("SELECT * FROM topic WHERE SiteId=? AND ForumId=?", new RowCallbackHandler()
+		jdbcTemplate.query("SELECT * FROM topic WHERE SiteId=? AND ForumId=? LIMIT 2", new RowCallbackHandler()
 		{
 			public void processRow(ResultSet rs) throws SQLException
 			{
@@ -244,16 +253,28 @@ public class ForumImport
 
 	void printPost(int siteId, int forumId, int topicId, final PrintWriter xmlWritter)
 	{
-		jdbcTemplate.query("SELECT * FROM post WHERE SiteId=? AND ForumId=? AND TopicId=?", new RowCallbackHandler()
+		jdbcTemplate.query("SELECT * FROM post WHERE SiteId=? AND ForumId=? AND TopicId=? LIMIT 10", new RowCallbackHandler()
 		{
 			public void processRow(ResultSet rs) throws SQLException
 			{
 				xmlWritter.write(getXmlStartTag("post"));
 				xmlWritter.write(getXmlTag("author", rs.getString("Author")));
 				xmlWritter.write(getXmlTag("date", rs.getString("Date")));
-				xmlWritter.write(getXmlTag("Content", rs.getString("Content")));
+				xmlWritter.write(getXmlTag("content", cleanInput(rs.getString("Content"))));
 				xmlWritter.write(getXmlEndTag("post"));
 			}
 		}, siteId, forumId, topicId);
+	}
+
+	private String cleanInput(String input)
+	{
+		input = Jsoup.parse(input).text();
+		input = input.replaceAll("[\u0000]", "");
+
+		// for (char c : input.toCharArray()) {
+		// System.out.printf("U+%04x ", (int) c);
+		// }
+
+		return input;
 	}
 }

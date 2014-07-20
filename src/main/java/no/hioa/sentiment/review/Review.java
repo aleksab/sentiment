@@ -1,38 +1,43 @@
-package no.hioa.sentiment.filmweb;
+package no.hioa.sentiment.review;
 
 import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+/**
+ * Model for a review, both movie review and product review.
+ */
 @Document
 public class Review
 {
 	@Id
-	private String id;
-	private String movieId;
-	private String link;
-	private int rating;
-	private String name;
-	private String content;
-	private String domain;
+	private String		id;
+
+	private String		link;
+	private int			rating;
+	private String		title;
+	private String		content;
+	private String		author;
+	private String		date;
+	private ReviewType	type;
 
 	public Review()
 	{
 
 	}
 
-	public Review(String movieId, String link, int rating, String name, String content, String domain)
+	public Review(String link, int rating, String title, String content, String author, String date, ReviewType type)
 	{
 		super();
-		this.movieId = movieId;
 		this.link = link;
 		this.rating = rating;
-		this.name = name;
+		this.title = title;
 		this.content = content;
-		this.domain = domain;
+		this.author = author;
+		this.date = date;
+		this.type = type;
 	}
 
 	public String getId()
@@ -45,14 +50,14 @@ public class Review
 		this.id = id;
 	}
 
-	public String getMovieId()
+	public ReviewType getType()
 	{
-		return movieId;
+		return type;
 	}
 
-	public void setMovieId(String movieId)
+	public void setType(ReviewType type)
 	{
-		this.movieId = movieId;
+		this.type = type;
 	}
 
 	public String getLink()
@@ -75,14 +80,14 @@ public class Review
 		this.rating = rating;
 	}
 
-	public String getName()
+	public String getTitle()
 	{
-		return name;
+		return title;
 	}
 
-	public void setName(String name)
+	public void setTitle(String title)
 	{
-		this.name = name;
+		this.title = title;
 	}
 
 	public String getContent()
@@ -95,26 +100,30 @@ public class Review
 		this.content = content;
 	}
 
-	public String getDomain()
+	public String getAuthor()
 	{
-		return domain;
+		return author;
 	}
 
-	public void setDomain(String domain)
+	public void setAuthor(String author)
 	{
-		this.domain = domain;
+		this.author = author;
 	}
-	
+
+	public String getDate()
+	{
+		return date;
+	}
+
+	public void setDate(String date)
+	{
+		this.date = date;
+	}
+
 	@Override
 	public boolean equals(Object obj)
 	{
 		return EqualsBuilder.reflectionEquals(this, obj);
-	}
-
-	@Override
-	public int hashCode()
-	{
-		return HashCodeBuilder.reflectionHashCode(this);
 	}
 
 	@Override

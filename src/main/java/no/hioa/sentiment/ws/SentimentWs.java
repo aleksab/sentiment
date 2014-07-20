@@ -9,9 +9,10 @@ import java.io.FileInputStream;
 import java.net.UnknownHostException;
 import java.util.Scanner;
 
-import no.hioa.sentiment.filmweb.FilmwebData;
-import no.hioa.sentiment.filmweb.Review;
 import no.hioa.sentiment.pmi.DefaultPmiCalculator;
+import no.hioa.sentiment.review.Review;
+import no.hioa.sentiment.review.ReviewData;
+import no.hioa.sentiment.review.ReviewType;
 import no.hioa.sentiment.score.DefaultSentimentScore;
 import no.hioa.sentiment.service.Corpus;
 import no.hioa.sentiment.service.SeedProvider;
@@ -29,10 +30,10 @@ import com.beust.jcommander.Parameter;
 
 public class SentimentWs
 {
-	private static final Logger logger = LoggerFactory.getLogger("fileLogger");
+	private static final Logger	logger	= LoggerFactory.getLogger("fileLogger");
 
 	@Parameter(names = "-port", description = "Webservice port")
-	private int port = 5300;
+	private int					port	= 5300;
 
 	public static void main(String[] args)
 	{
@@ -142,12 +143,13 @@ public class SentimentWs
 			@Override
 			public SentimentScoreResponse handle(SentimentScoreRequest request) throws UnknownHostException
 			{
-				DefaultSentimentScore score = new DefaultSentimentScore(Corpus.MOVIE_REVIEWS);
-				return new SentimentScoreResponse(score.getSentimentScore(request.getSentimentList(), request.getShifterList()));
+				DefaultSentimentScore score = new DefaultSentimentScore(Corpus.REVIEWS);
+				ReviewType type = ReviewType.getEnum(request.getType());
+				return new SentimentScoreResponse(score.getSentimentScore(type, request.getSentimentList(), request.getShifterList()));
 			}
 		});
 
-		get(new JsonTransformer("/filmweb/review/:id")
+		get(new JsonTransformer("/data/review/:id")
 		{
 			@Override
 			public Object handle(Request request, Response response)
@@ -158,12 +160,13 @@ public class SentimentWs
 
 				try
 				{
-					Review review = new FilmwebData().getReview(id);
+					Review review = new ReviewData().getReview(id);
 					if (review == null)
 						return "Could not find review by id " + id;
 					else
 						return review;
-				} catch (UnknownHostException ex)
+				}
+				catch (UnknownHostException ex)
 				{
 					logger.error("Unknown error", ex);
 					return "Could not connect to database";
@@ -185,7 +188,8 @@ public class SentimentWs
 				String input = scanner.nextLine();
 				buffer.append(input + "\n");
 			}
-		} catch (Exception ex)
+		}
+		catch (Exception ex)
 		{
 			logger.error("Could not read content for file " + file.getAbsolutePath(), ex);
 		}

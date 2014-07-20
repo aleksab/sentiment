@@ -1,9 +1,12 @@
-package no.hioa.sentiment.filmweb;
+package no.hioa.sentiment.review;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
@@ -33,49 +36,103 @@ import org.springframework.data.mongodb.core.query.BasicQuery;
 import org.springframework.data.mongodb.repository.support.MongoRepositoryFactory;
 import org.springframework.data.repository.core.support.RepositoryFactorySupport;
 
-public class FilmwebData
+public class ReviewData
 {
-	private static final Logger logger = LoggerFactory.getLogger("fileLogger");
+	private static final Logger	logger	= LoggerFactory.getLogger("fileLogger");
 
-	private MovieRepository repository;
-	private String host = null;
+	private ReviewRepository	repository;
+	private String				host	= null;
 
 	public static void main(String[] args) throws Exception
 	{
 		PropertyConfigurator.configure("log4j.properties");
 
-		new FilmwebData("localhost").extractMostCommonWords(new File("target/topwords.txt"), Collections.<String> emptyList(), -1);
-		new FilmwebData("localhost").removeStopWords(new File("target/topwords.txt"), new File("target/topwords.stripped.txt"),
+		new ReviewData("localhost").extractMostCommonWords(new File("target/topwords.txt"), Collections.<String> emptyList(), -1);
+		new ReviewData("localhost").removeStopWords(new File("target/topwords.txt"), new File("target/topwords.stripped.txt"),
 				SeedProvider.getStopWords());
 	}
-	
-	public FilmwebData() throws UnknownHostException
+
+	public ReviewData() throws UnknownHostException
 	{
-		
+
 	}
 
-	public FilmwebData(String host) throws UnknownHostException
+	public ReviewData(String host) throws UnknownHostException
 	{
 		this.host = host;
-		MongoOperations mongoOperations = MongoProvider.getMongoProvider(host, Corpus.MOVIE_REVIEWS);
+		MongoOperations mongoOperations = MongoProvider.getMongoProvider(host, Corpus.REVIEWS);
 
 		RepositoryFactorySupport factory = new MongoRepositoryFactory(mongoOperations);
-		this.repository = factory.getRepository(MovieRepository.class);
+		this.repository = factory.getRepository(ReviewRepository.class);
 	}
 
 	public Review getReview(String id) throws UnknownHostException
 	{
-		MongoOperations mongoOperations = MongoProvider.getMongoProvider(host, Corpus.MOVIE_REVIEWS);
+		MongoOperations mongoOperations = MongoProvider.getMongoProvider(host, Corpus.REVIEWS);
 		logger.info("Searching for review with id {}", id);
 		return mongoOperations.findById(id, Review.class);
 	}
 
 	public List<Review> getReviewFromLink(String link) throws UnknownHostException
 	{
-		MongoOperations mongoOperations = MongoProvider.getMongoProvider(host, Corpus.MOVIE_REVIEWS);
+		MongoOperations mongoOperations = MongoProvider.getMongoProvider(host, Corpus.REVIEWS);
 		logger.info("Searching for review with link {}", link);
 		BasicQuery query = new BasicQuery("{ link : '" + link + "' }");
 		return mongoOperations.find(query, Review.class);
+	}
+
+	public void mergeFile(File input, File input2) throws FileNotFoundException, UnsupportedEncodingException
+	{
+		List<String> words1 = getFileContent(input);
+		List<String> words2 = getFileContent(input2);
+
+		HashMap<String, Integer> words = new HashMap<>();
+
+		for (String word : words1)
+		{
+			String w = word.split(":")[0];
+			Integer f = Integer.valueOf(word.split(":")[1]);
+
+			words.put(w, f);
+		}
+
+		for (String word : words2)
+		{
+			String w = word.split(":")[0];
+			Integer f = Integer.valueOf(word.split(":")[1]);
+
+			if (words.containsKey(w))
+				words.put(w, words.get(w) + f);
+			else
+				words.put(w, f);
+		}
+
+		Map<String, Integer> sorted = MapUtil.sortByValue(words);
+
+		PrintWriter output = new PrintWriter("target/topwords.stripped.txt", "ISO-8859-1");
+
+		for (String word : sorted.keySet())
+		{
+			output.write(word + ":" + words.get(word) + "\n");
+		}
+
+		output.close();
+	}
+
+	public void filterFile(File input, File filter) throws FileNotFoundException, UnsupportedEncodingException
+	{
+		List<String> words = getFileContent(input);
+		List<String> keepFilter = getFileContent(filter);
+
+		PrintWriter output = new PrintWriter("target/filtered.txt", "UTF-8");
+
+		for (String word : words)
+		{
+			if (keepFilter.contains(word.split(":")[0]))
+				output.write(word + "\n");
+		}
+
+		output.close();
 	}
 
 	public void extractMostCommonWords(File output, List<String> stopWords, int topWordsCount)
@@ -150,7 +207,8 @@ public class FilmwebData
 
 				occurences.put(word, new BigDecimal(wordOccurence));
 			}
-		} catch (Exception ex)
+		}
+		catch (Exception ex)
 		{
 			logger.error("Could not read content for file " + input.getAbsolutePath(), ex);
 		}
@@ -173,7 +231,8 @@ public class FilmwebData
 				String input = scanner.nextLine().toLowerCase();
 				words.add(input);
 			}
-		} catch (Exception ex)
+		}
+		catch (Exception ex)
 		{
 			logger.error("Could not read content for file " + file.getAbsolutePath(), ex);
 		}
@@ -196,7 +255,8 @@ public class FilmwebData
 			}
 
 			logger.info("Results saved to " + newFile);
-		} catch (IOException ex)
+		}
+		catch (IOException ex)
 		{
 			logger.error("Could not write occurences to file " + output, ex);
 		}

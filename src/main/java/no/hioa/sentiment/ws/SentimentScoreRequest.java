@@ -2,17 +2,30 @@ package no.hioa.sentiment.ws;
 
 import java.util.List;
 
+import no.hioa.sentiment.review.ReviewType;
 import no.hioa.sentiment.score.SentimentWord;
 
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
+import org.springframework.util.StringUtils;
 
 public class SentimentScoreRequest implements RequestValidator
 {
-	private List<SentimentWord> sentimentList;
-	private List<String> shifterList;
+	private String				type;
+	private List<SentimentWord>	sentimentList;
+	private List<String>		shifterList;
+
+	public String getType()
+	{
+		return type;
+	}
+
+	public void setType(String type)
+	{
+		this.type = type;
+	}
 
 	public List<SentimentWord> getSentimentList()
 	{
@@ -37,7 +50,18 @@ public class SentimentScoreRequest implements RequestValidator
 	@Override
 	public void validateRequest() throws IllegalArgumentException
 	{
-		if (getSentimentList() == null || getSentimentList().size() == 0)
+		if (StringUtils.isEmpty(getType()))
+			throw new IllegalArgumentException("Missing review type");
+		try
+		{
+			ReviewType.getEnum(getType());			
+		}
+		catch (IllegalArgumentException ex)
+		{
+			throw new IllegalArgumentException("Invalid review type. Valid are: " + ReviewType.getValidType());
+		}
+		
+		if (StringUtils.isEmpty(getSentimentList()))
 			throw new IllegalArgumentException("Missing sentiment list");
 	}
 

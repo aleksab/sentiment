@@ -1,4 +1,4 @@
-package no.hioa.sentiment.product;
+package no.hioa.sentiment.review;
 
 import java.io.File;
 import java.net.UnknownHostException;
@@ -19,49 +19,49 @@ import org.springframework.data.mongodb.core.query.Query;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 
-public class ProductImport
+public class ReviewImport
 {
-	private static final Logger consoleLogger = LoggerFactory.getLogger("stdoutLogger");
+	private static final Logger	consoleLogger	= LoggerFactory.getLogger("stdoutLogger");
 
 	@Parameter(names = "-db", description = "Mongo database name")
-	private String dbName = "filmweb";
+	private String				dbName			= "review";
 
 	@Parameter(names = "-xml", description = "Path to xml file")
-	private String xmlFile;
+	private String				xmlFile;
 
 	@Parameter(names = "-p", description = "Print statistics")
-	private boolean printStats = false;
+	private boolean				printStats		= false;
 
 	@Parameter(names = "-host", description = "Host to mongo server")
-	private String mongoHost;
+	private String				mongoHost;
 
 	@Parameter(names = "-username", description = "Username of mongo user")
-	private String mongoUsername;
+	private String				mongoUsername;
 
 	@Parameter(names = "-password", description = "Password for mongo user")
-	private String mongoPassword;
+	private String				mongoPassword;
 
 	@Parameter(names = "-authdb", description = "Name of database where user is defined")
-	private String mongoAuthDb = "admin";
+	private String				mongoAuthDb		= "admin";
 
 	@Parameter(names = "-noauth", description = "Do not use authentication")
-	private boolean noAuth = true;
+	private boolean				noAuth			= true;
 
-	private MongoOperations mongoOperations;
+	private MongoOperations		mongoOperations;
 
 	public static void main(String[] args) throws UnknownHostException
 	{
 		PropertyConfigurator.configure("log4j.properties");
 
-		new ProductImport(args);
+		new ReviewImport(args);
 	}
 
-	public ProductImport(String[] args) throws UnknownHostException
+	public ReviewImport(String[] args) throws UnknownHostException
 	{
 		JCommander commander = new JCommander(this, args);
 
 		if (noAuth)
-			mongoOperations = MongoProvider.getMongoProvider(mongoHost, Corpus.PRODUCT_REVIEWS);
+			mongoOperations = MongoProvider.getMongoProvider(mongoHost, Corpus.REVIEWS);
 		else
 			mongoOperations = MongoProvider.getMongoProvider(mongoHost, dbName, mongoUsername, mongoPassword);
 
@@ -72,51 +72,48 @@ public class ProductImport
 		else
 		{
 			long result = insertXmlIntoMongo(new File(xmlFile));
-			consoleLogger.info("{} product reviews have been imported", result);
+			consoleLogger.info("{} reviews have been imported", result);
 		}
 	}
 
 	public void printStats()
 	{
-		long reviews = mongoOperations.count(new Query(), ProductReview.class);
+		long reviews = mongoOperations.count(new Query(), Review.class);
 		consoleLogger.info("Number of reviews in {} is {}", dbName, reviews);
 
 		BasicQuery query = new BasicQuery("{ rating : 6 }");
-		ProductReview review = mongoOperations.findOne(query, ProductReview.class);
+		Review review = mongoOperations.findOne(query, Review.class);
 		consoleLogger.info(review.getRating() + " - " + review.getContent());
 	}
 
 	public long insertXmlIntoMongo(File xmlFile)
 	{
-		ProductHeaderXML reviews = null;
+		ReviewHeaderXML reviews = null;
 
 		try
 		{
-			JAXBContext context = JAXBContext.newInstance(ProductHeaderXML.class);
+			JAXBContext context = JAXBContext.newInstance(ReviewHeaderXML.class);
 			Unmarshaller unmarshaller = context.createUnmarshaller();
-			reviews = (ProductHeaderXML) unmarshaller.unmarshal(xmlFile);
-		} catch (Exception ex)
+			reviews = (ReviewHeaderXML) unmarshaller.unmarshal(xmlFile);
+		}
+		catch (Exception ex)
 		{
 			consoleLogger.error("Unknown error", ex);
 			return 0;
 		}
 
-		consoleLogger.info("Reviews extracted: {}", reviews.getProductReview().size());
+		consoleLogger.info("Reviews extracted: {}", reviews.getReviews().size());
 
-		createCollection(ProductReview.class);
+		createCollection(Review.class);
 
 		consoleLogger.info("Inserting reviews into mongodb");
 
-		for (ProductReviewXML review : reviews.getProductReview())
+		for (Review review : reviews.getReviews())
 		{
-			ProductReview internalReview = new ProductReview(review.getContent(), review.getAuthor(), review.getDate(), review.getLink(),
-					review.getRating(), review.getTitle(), review.getName());
-			mongoOperations.insert(internalReview);
+			mongoOperations.insert(review);
 		}
 
-		// TODO: Add code for adding index to content
-
-		return reviews.getProductReview().size();
+		return reviews.getReviews().size();
 	}
 
 	void createCollection(Class<?> clazz)
