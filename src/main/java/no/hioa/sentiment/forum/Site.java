@@ -11,7 +11,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class Site
 {
 	@Id
-	private int		id;
+	private String	id;
 	private String	name;
 
 	public Site()
@@ -25,19 +25,19 @@ public class Site
 		this.name = name;
 	}
 
-	public Site(int id, String name)
+	public Site(String id, String name)
 	{
 		super();
 		this.id = id;
 		this.name = name;
 	}
 
-	public int getId()
+	public String getId()
 	{
 		return id;
 	}
 
-	public void setId(int id)
+	public void setId(String id)
 	{
 		this.id = id;
 	}

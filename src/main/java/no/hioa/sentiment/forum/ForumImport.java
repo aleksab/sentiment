@@ -1,10 +1,18 @@
 package no.hioa.sentiment.forum;
 
-import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpression;
+import javax.xml.xpath.XPathFactory;
 
 import no.hioa.sentiment.service.Corpus;
 import no.hioa.sentiment.service.MongoProvider;
@@ -20,12 +28,12 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.jdbc.core.simple.ParameterizedRowMapper;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
-import com.ximpleware.AutoPilot;
-import com.ximpleware.VTDGen;
-import com.ximpleware.VTDNav;
 
 public class ForumImport
 {
@@ -60,12 +68,19 @@ public class ForumImport
 
 	private MongoOperations		mongoOperations	= null;
 	private JdbcTemplate		jdbcTemplate	= null;
+	private XPathFactory		factory			= XPathFactory.newInstance();
+	private XPath				xpath			= factory.newXPath();
 
 	public static void main(String[] args) throws Exception
 	{
 		PropertyConfigurator.configure("log4j.properties");
 
-		new ForumImport(args);
+		new ForumImport();
+	}
+
+	public ForumImport() throws Exception
+	{
+		insertXmlIntoMongo("D:\\Data\\Diskusjon.no-data.xml");
 	}
 
 	public ForumImport(String[] args) throws Exception
@@ -85,7 +100,7 @@ public class ForumImport
 			commander.usage();
 		else
 		{
-			long result = insertXmlIntoMongo(new File(xmlFile));
+			long result = insertXmlIntoMongo(xmlFile);
 			consoleLogger.info("{} forum posts have been imported", result);
 		}
 	}
@@ -110,40 +125,29 @@ public class ForumImport
 				+ post.getContent());
 	}
 
-	public long insertXmlIntoMongo(File xmlFile) throws Exception
+	public long insertXmlIntoMongo(String xmlFile) throws Exception
 	{
-		final VTDGen vg = new VTDGen();
-		vg.parseFile(xmlFile.getAbsolutePath(), false);
-		
-		final VTDNav vn = vg.getNav();
-		final AutoPilot ap = new AutoPilot(vn);
-		ap.selectXPath("//site");
-
-		while ((ap.evalXPath()) != -1)
+		try
 		{
-			String name = getNodeTextFast(vn, "name");
-			Site site = new Site(name);
-			consoleLogger.info("Site: {}", site);
-			
-			
+			InputStream input = new FileInputStream(xmlFile);
+
+			DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
+			Document doc = docBuilder.parse(input);
+			doc.getDocumentElement().normalize();
+
+			String siteName = getNodeTextOrNull(doc, "//site/name");
+			Site site = new Site(siteName);
+			mongoOperations.insert(site);
+
+			insertAllForums(doc, site.getId());
+		}
+		catch (Exception ex)
+		{
+			consoleLogger.error("Unknown error", ex);
 		}
 
 		return 0;
-	}
-
-	private String getNodeTextFast(VTDNav vn, String xpathString) throws Exception
-	{
-		AutoPilot ap = new AutoPilot(vn);
-		ap.selectXPath(xpathString);
-
-		String output = "";
-		vn.push();
-		if (ap.evalXPath() != -1)
-			output = vn.toNormalizedString(vn.getText());
-		ap.resetXPath();
-		vn.pop();
-
-		return output;
 	}
 
 	public void generateXml() throws Exception
@@ -212,30 +216,30 @@ public class ForumImport
 		{
 			public Site mapRow(ResultSet rs, int rowNum) throws SQLException
 			{
-				return new Site(rs.getInt("SiteId"), rs.getString("Name"));
+				return new Site(rs.getString("SiteId"), rs.getString("Name"));
 			}
 		});
 	}
 
-	List<Forum> getForums(int siteId)
+	List<Forum> getForums(String siteId)
 	{
 		return jdbcTemplate.query("SELECT * FROM forum WHERE SiteId=?", new ParameterizedRowMapper<Forum>()
 		{
 			public Forum mapRow(ResultSet rs, int rowNum) throws SQLException
 			{
 				// siteId will not be part of xml
-				return new Forum(rs.getInt("ForumId"), "", rs.getString("Link"), rs.getString("Title"));
+				return new Forum(rs.getString("ForumId"), "", rs.getString("Link"), rs.getString("Title"));
 			}
 		}, siteId);
 	}
 
-	void printTopics(final int siteId, final int forumId, final PrintWriter xmlWritter)
+	void printTopics(final String siteId, final String forumId, final PrintWriter xmlWritter)
 	{
 		jdbcTemplate.query("SELECT * FROM topic WHERE SiteId=? AND ForumId=? LIMIT 2", new RowCallbackHandler()
 		{
 			public void processRow(ResultSet rs) throws SQLException
 			{
-				int topicId = rs.getInt("TopicId");
+				String topicId = rs.getString("TopicId");
 				xmlWritter.write(getXmlStartTag("topic"));
 				xmlWritter.write(getXmlTag("link", rs.getString("Link")));
 				xmlWritter.write(getXmlTag("title", rs.getString("Title")));
@@ -251,7 +255,7 @@ public class ForumImport
 		xmlWritter.flush();
 	}
 
-	void printPost(int siteId, int forumId, int topicId, final PrintWriter xmlWritter)
+	void printPost(String siteId, String forumId, String topicId, final PrintWriter xmlWritter)
 	{
 		jdbcTemplate.query("SELECT * FROM post WHERE SiteId=? AND ForumId=? AND TopicId=? LIMIT 10", new RowCallbackHandler()
 		{
@@ -277,4 +281,70 @@ public class ForumImport
 
 		return input;
 	}
+
+	private void insertAllForums(Document doc, String siteId) throws Exception
+	{
+		XPathExpression forums = xpath.compile("//forums/forum");
+		NodeList forumList = (NodeList) forums.evaluate(doc, XPathConstants.NODESET);
+		for (int i = 0; i < forumList.getLength(); i++)
+		{
+			Element forumNode = (Element) forumList.item(i);
+			String forumLink = getNodeTextOrNull(forumNode, "link");
+			String forumIitle = getNodeTextOrNull(forumNode, "title");
+
+			Forum forum = new Forum(siteId, forumLink, forumIitle);
+			mongoOperations.insert(forum);
+
+			insertAllTopics(forumNode, forum);
+		}
+	}
+
+	private void insertAllTopics(Element forumNode, Forum forum) throws Exception
+	{
+		XPathExpression topics = xpath.compile("//topics/topic");
+		NodeList topicList = (NodeList) topics.evaluate(forumNode, XPathConstants.NODESET);
+		for (int i = 0; i < topicList.getLength(); i++)
+		{
+			Element topicNode = (Element) topicList.item(i);
+			String topicLink = getNodeTextOrNull(topicNode, "link");
+			String topicTitle = getNodeTextOrNull(topicNode, "title");
+
+			Topic topic = new Topic(forum.getSiteId(), forum.getId(), topicLink, topicTitle);
+			mongoOperations.insert(topic);
+
+			insertAllPosts(topicNode, topic);
+		}
+	}
+
+	private void insertAllPosts(Element topicNode, Topic topic) throws Exception
+	{
+		XPathExpression posts = xpath.compile("//posts/post");
+		NodeList postList = (NodeList) posts.evaluate(topicNode, XPathConstants.NODESET);
+		for (int i = 0; i < postList.getLength(); i++)
+		{
+			Element postNode = (Element) postList.item(i);
+			String postAuthor = getNodeTextOrNull(postNode, "author");
+			String postDate = getNodeTextOrNull(postNode, "date");
+			String postContent = getNodeTextOrNull(postNode, "content");
+
+			Post post = new Post(topic.getSiteId(), topic.getForumId(), topic.getId(), postAuthor, postDate, postContent);
+			mongoOperations.insert(post);
+		}
+	}
+
+	private String getNodeTextOrNull(Object node, String xpathString) throws Exception
+	{
+		try
+		{
+			XPathExpression area = xpath.compile(xpathString);
+			NodeList location = (NodeList) area.evaluate(node, XPathConstants.NODESET);
+			Element locNode = (Element) location.item(0);
+			return locNode.getTextContent();
+		}
+		catch (Exception ex)
+		{
+			return null;
+		}
+	}
+
 }
