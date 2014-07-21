@@ -20,6 +20,7 @@ import no.hioa.sentiment.util.DatabaseUtilities;
 
 import org.apache.log4j.PropertyConfigurator;
 import org.jsoup.Jsoup;
+import org.jsoup.safety.Whitelist;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.mongodb.core.MongoOperations;
@@ -28,6 +29,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.jdbc.core.simple.ParameterizedRowMapper;
+import org.unbescape.html.HtmlEscape;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -75,12 +77,7 @@ public class ForumImport
 	{
 		PropertyConfigurator.configure("log4j.properties");
 
-		new ForumImport();
-	}
-
-	public ForumImport() throws Exception
-	{
-		insertXmlIntoMongo("D:\\Data\\Diskusjon.no-data.xml");
+		new ForumImport(args);
 	}
 
 	public ForumImport(String[] args) throws Exception
@@ -139,6 +136,7 @@ public class ForumImport
 			String siteName = getNodeTextOrNull(doc, "//site/name");
 			Site site = new Site(siteName);
 			mongoOperations.insert(site);
+			consoleLogger.info("Inserted site {}", site);
 
 			insertAllForums(doc, site.getId());
 		}
@@ -159,7 +157,7 @@ public class ForumImport
 
 		for (Site site : sites)
 		{
-			PrintWriter xmlWritter = new PrintWriter("target/" + site.getName() + "-data.xml", "ISO-8859-1");
+			PrintWriter xmlWritter = new PrintWriter("target/" + site.getName() + "-data.xml", "UTF-8");
 			xmlWritter.write(getXmlHeader());
 			xmlWritter.write(getXmlStartTag("site"));
 			xmlWritter.write(getXmlTag("name", site.getName()));
@@ -180,8 +178,6 @@ public class ForumImport
 				xmlWritter.write(getXmlEndTag("topics"));
 
 				xmlWritter.write(getXmlEndTag("forum"));
-
-				break;
 			}
 
 			xmlWritter.write(getXmlEndTag("forums"));
@@ -192,7 +188,7 @@ public class ForumImport
 
 	private String getXmlHeader()
 	{
-		return "<?xml version=\"1.0\" encoding=\"Unicode\" standalone=\"yes\"?>\n";
+		return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
 	}
 
 	private String getXmlStartTag(String tagName)
@@ -221,21 +217,20 @@ public class ForumImport
 		});
 	}
 
-	List<Forum> getForums(String siteId)
+	List<Forum> getForums(final String siteId)
 	{
 		return jdbcTemplate.query("SELECT * FROM forum WHERE SiteId=?", new ParameterizedRowMapper<Forum>()
 		{
 			public Forum mapRow(ResultSet rs, int rowNum) throws SQLException
 			{
-				// siteId will not be part of xml
-				return new Forum(rs.getString("ForumId"), "", rs.getString("Link"), rs.getString("Title"));
+				return new Forum(rs.getString("ForumId"), siteId, rs.getString("Link"), rs.getString("Title"));
 			}
 		}, siteId);
 	}
 
 	void printTopics(final String siteId, final String forumId, final PrintWriter xmlWritter)
 	{
-		jdbcTemplate.query("SELECT * FROM topic WHERE SiteId=? AND ForumId=? LIMIT 2", new RowCallbackHandler()
+		jdbcTemplate.query("SELECT * FROM topic WHERE SiteId=? AND ForumId=?", new RowCallbackHandler()
 		{
 			public void processRow(ResultSet rs) throws SQLException
 			{
@@ -257,7 +252,7 @@ public class ForumImport
 
 	void printPost(String siteId, String forumId, String topicId, final PrintWriter xmlWritter)
 	{
-		jdbcTemplate.query("SELECT * FROM post WHERE SiteId=? AND ForumId=? AND TopicId=? LIMIT 10", new RowCallbackHandler()
+		jdbcTemplate.query("SELECT * FROM post WHERE SiteId=? AND ForumId=? AND TopicId=?", new RowCallbackHandler()
 		{
 			public void processRow(ResultSet rs) throws SQLException
 			{
@@ -272,20 +267,30 @@ public class ForumImport
 
 	private String cleanInput(String input)
 	{
-		input = Jsoup.parse(input).text();
-		input = input.replaceAll("[\u0000]", "");
 
-		// for (char c : input.toCharArray()) {
-		// System.out.printf("U+%04x ", (int) c);
-		// }
+		input = Jsoup.parse(input).body().text();
+		input = Jsoup.clean(input, Whitelist.basic());
+		input = HtmlEscape.unescapeHtml(input);
 
-		return input;
+		StringBuffer out = new StringBuffer();
+		char current;
+
+		for (int i = 0; i < input.length(); i++)
+		{
+			current = input.charAt(i);
+			if ((current == 0x9) || (current == 0xA) || (current == 0xD) || ((current >= 0x20) && (current <= 0xD7FF))
+					|| ((current >= 0xE000) && (current <= 0xFFFD)) || ((current >= 0x10000) && (current <= 0x10FFFF)))
+				out.append(current);
+		}
+
+		return out.toString();
 	}
 
 	private void insertAllForums(Document doc, String siteId) throws Exception
 	{
-		XPathExpression forums = xpath.compile("//forums/forum");
-		NodeList forumList = (NodeList) forums.evaluate(doc, XPathConstants.NODESET);
+		NodeList forumList = (NodeList) xpath.evaluate("//forums/forum", doc, XPathConstants.NODESET);
+		consoleLogger.info("Going to insert {} forums", forumList.getLength());
+
 		for (int i = 0; i < forumList.getLength(); i++)
 		{
 			Element forumNode = (Element) forumList.item(i);
@@ -296,13 +301,15 @@ public class ForumImport
 			mongoOperations.insert(forum);
 
 			insertAllTopics(forumNode, forum);
+
+			consoleLogger.info("Forum {} / {}", i, forumList.getLength());
 		}
 	}
 
 	private void insertAllTopics(Element forumNode, Forum forum) throws Exception
 	{
-		XPathExpression topics = xpath.compile("//topics/topic");
-		NodeList topicList = (NodeList) topics.evaluate(forumNode, XPathConstants.NODESET);
+		NodeList topicList = (NodeList) xpath.evaluate("topics/topic", forumNode, XPathConstants.NODESET);
+
 		for (int i = 0; i < topicList.getLength(); i++)
 		{
 			Element topicNode = (Element) topicList.item(i);
@@ -318,8 +325,8 @@ public class ForumImport
 
 	private void insertAllPosts(Element topicNode, Topic topic) throws Exception
 	{
-		XPathExpression posts = xpath.compile("//posts/post");
-		NodeList postList = (NodeList) posts.evaluate(topicNode, XPathConstants.NODESET);
+		NodeList postList = (NodeList) xpath.evaluate("posts/post", topicNode, XPathConstants.NODESET);
+
 		for (int i = 0; i < postList.getLength(); i++)
 		{
 			Element postNode = (Element) postList.item(i);
@@ -346,5 +353,4 @@ public class ForumImport
 			return null;
 		}
 	}
-
 }
