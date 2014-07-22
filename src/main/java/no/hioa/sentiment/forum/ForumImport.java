@@ -36,6 +36,9 @@ import org.w3c.dom.NodeList;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
+import com.ximpleware.AutoPilot;
+import com.ximpleware.VTDGen;
+import com.ximpleware.VTDNav;
 
 public class ForumImport
 {
@@ -49,6 +52,9 @@ public class ForumImport
 
 	@Parameter(names = "-p", description = "Print statistics")
 	private boolean				printStats		= false;
+
+	@Parameter(names = "-pxml", description = "Print xml statistics")
+	private boolean				printXmlStats	= false;
 
 	@Parameter(names = "-host", description = "Host to mongo server")
 	private String				mongoHost;
@@ -67,6 +73,9 @@ public class ForumImport
 
 	@Parameter(names = "-generate", description = "Generate xml from database")
 	private boolean				generate		= false;
+
+	@Parameter(names = "-initDb", description = "Setup database and collection")
+	private boolean				initDb			= false;
 
 	private MongoOperations		mongoOperations	= null;
 	private JdbcTemplate		jdbcTemplate	= null;
@@ -91,13 +100,17 @@ public class ForumImport
 
 		if (printStats)
 			printStats();
+		else if (printXmlStats)
+			printXmlStats();
+		else if (initDb)
+			initDb();
 		else if (generate)
 			generateXml();
 		else if (xmlFile == null)
 			commander.usage();
 		else
 		{
-			long result = insertXmlIntoMongo(xmlFile);
+			long result = insertXmlFastIntoMongo(xmlFile);
 			consoleLogger.info("{} forum posts have been imported", result);
 		}
 	}
@@ -122,6 +135,95 @@ public class ForumImport
 				+ post.getContent());
 	}
 
+	public void printXmlStats()
+	{
+		try
+		{
+			InputStream input = new FileInputStream(xmlFile);
+
+			DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
+			Document doc = docBuilder.parse(input);
+			doc.getDocumentElement().normalize();
+
+			NodeList forumList = (NodeList) xpath.evaluate("//forums/forum", doc, XPathConstants.NODESET);
+			consoleLogger.info("There are {} forums", forumList.getLength());
+
+			NodeList topicList = (NodeList) xpath.evaluate("//topics/topic", doc, XPathConstants.NODESET);
+			consoleLogger.info("There are {} topics", topicList.getLength());
+
+			NodeList postList = (NodeList) xpath.evaluate("//posts/post", doc, XPathConstants.NODESET);
+			consoleLogger.info("There are {} posts", postList.getLength());
+		}
+		catch (Exception ex)
+		{
+			consoleLogger.error("Unknown error", ex);
+		}
+	}
+
+	public void initDb()
+	{
+		if (!mongoOperations.collectionExists(Post.class))
+		{
+			mongoOperations.createCollection(Post.class);
+			consoleLogger.info("Run this manually: db.runCommand( { enablesharding : \"forum\" } );");
+			consoleLogger.info("Run this manually: db.runCommand( { shardcollection : \"forum.post\", key : { _id : 1 } } )");
+			consoleLogger.info("Run this manually: db.post.ensureIndex( { content : \"text\" } )");
+		}
+		else
+			consoleLogger.info("Collection post already exists! Make sure it's sharded and has index on text");
+	}
+
+	public long insertXmlFastIntoMongo(String xmlFile) throws Exception
+	{
+		try
+		{
+			final VTDGen vg = new VTDGen();
+			vg.parseFile(xmlFile, false);
+
+			final VTDNav vn = vg.getNav();
+			final AutoPilot ap = new AutoPilot(vn);
+			ap.selectXPath("//posts/post");
+
+			int i = 0;
+			while ((ap.evalXPath()) != -1)
+			{
+				String postAuthor = getNodeTextFast(vn, "author");
+				String postDate = getNodeTextFast(vn, "date");
+				String postContent = getNodeTextFast(vn, "content");
+
+				Post post = new Post("0", "0", "0", postAuthor, postDate, postContent);
+				mongoOperations.insert(post);
+
+				i++;
+				if (i % 1000 == 0)
+					consoleLogger.info("Inserted {} posts", i);
+			}
+
+			return i;
+		}
+		catch (Exception ex)
+		{
+			consoleLogger.error("Unknown error", ex);
+			return 0;
+		}
+	}
+
+	private String getNodeTextFast(VTDNav vn, String xpathString) throws Exception
+	{
+		AutoPilot ap = new AutoPilot(vn);
+		ap.selectXPath(xpathString);
+
+		String output = "";
+		vn.push();
+		if (ap.evalXPath() != -1)
+			output = vn.toNormalizedString(vn.getText());
+		ap.resetXPath();
+		vn.pop();
+
+		return output;
+	}
+
 	public long insertXmlIntoMongo(String xmlFile) throws Exception
 	{
 		try
@@ -133,12 +235,38 @@ public class ForumImport
 			Document doc = docBuilder.parse(input);
 			doc.getDocumentElement().normalize();
 
-			String siteName = getNodeTextOrNull(doc, "//site/name");
-			Site site = new Site(siteName);
-			mongoOperations.insert(site);
-			consoleLogger.info("Inserted site {}", site);
+			boolean onlyInsertPots = true;
 
-			insertAllForums(doc, site.getId());
+			if (onlyInsertPots)
+			{
+				NodeList postList = (NodeList) xpath.evaluate("//posts/post", doc, XPathConstants.NODESET);
+				consoleLogger.info("Going to insert {} posts", postList.getLength());
+
+				for (int i = 0; i < postList.getLength(); i++)
+				{
+					Element postNode = (Element) postList.item(i);
+					String postAuthor = getNodeTextOrNull(postNode, "author");
+					String postDate = getNodeTextOrNull(postNode, "date");
+					String postContent = getNodeTextOrNull(postNode, "content");
+
+					Post post = new Post("0", "0", "0", postAuthor, postDate, postContent);
+					mongoOperations.insert(post);
+
+					if (i % 1000 == 0)
+						consoleLogger.info("Inserted {} posts", i);
+				}
+
+				return postList.getLength();
+			}
+			else
+			{
+				String siteName = getNodeTextOrNull(doc, "//site/name");
+				Site site = new Site(siteName);
+				mongoOperations.insert(site);
+				consoleLogger.info("Inserted site {}", site);
+
+				insertAllForums(doc, site.getId());
+			}
 		}
 		catch (Exception ex)
 		{
@@ -212,7 +340,7 @@ public class ForumImport
 		{
 			public Site mapRow(ResultSet rs, int rowNum) throws SQLException
 			{
-				return new Site(rs.getString("SiteId"), rs.getString("Name"));
+				return new Site(rs.getString("SiteId"), cleanInput(rs.getString("Name")));
 			}
 		});
 	}
@@ -223,7 +351,7 @@ public class ForumImport
 		{
 			public Forum mapRow(ResultSet rs, int rowNum) throws SQLException
 			{
-				return new Forum(rs.getString("ForumId"), siteId, rs.getString("Link"), rs.getString("Title"));
+				return new Forum(rs.getString("ForumId"), siteId, rs.getString("Link"), cleanInput(rs.getString("Title")));
 			}
 		}, siteId);
 	}
@@ -237,7 +365,7 @@ public class ForumImport
 				String topicId = rs.getString("TopicId");
 				xmlWritter.write(getXmlStartTag("topic"));
 				xmlWritter.write(getXmlTag("link", rs.getString("Link")));
-				xmlWritter.write(getXmlTag("title", rs.getString("Title")));
+				xmlWritter.write(getXmlTag("title", cleanInput(rs.getString("Title"))));
 
 				xmlWritter.write(getXmlStartTag("posts"));
 				printPost(siteId, forumId, topicId, xmlWritter);
@@ -257,7 +385,7 @@ public class ForumImport
 			public void processRow(ResultSet rs) throws SQLException
 			{
 				xmlWritter.write(getXmlStartTag("post"));
-				xmlWritter.write(getXmlTag("author", rs.getString("Author")));
+				xmlWritter.write(getXmlTag("author", cleanInput(rs.getString("Author"))));
 				xmlWritter.write(getXmlTag("date", rs.getString("Date")));
 				xmlWritter.write(getXmlTag("content", cleanInput(rs.getString("Content"))));
 				xmlWritter.write(getXmlEndTag("post"));
@@ -267,7 +395,6 @@ public class ForumImport
 
 	private String cleanInput(String input)
 	{
-
 		input = Jsoup.parse(input).body().text();
 		input = Jsoup.clean(input, Whitelist.basic());
 		input = HtmlEscape.unescapeHtml(input);
