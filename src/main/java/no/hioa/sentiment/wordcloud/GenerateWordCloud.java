@@ -38,8 +38,10 @@ public class GenerateWordCloud
 				String[] input = scanner.nextLine().toLowerCase().split(",");
 				String word = input[0];
 				BigDecimal score = BigDecimal.ZERO.setScale(5);
-				for (int i = 1; i <= 14; i++)
+				for (int i = 1; i <= 7; i++)
 					score = score.add(new BigDecimal(input[i]));
+				for (int i = 8; i <= 14; i++)
+					score = score.subtract(new BigDecimal(input[i]));
 
 				if (score.compareTo(BigDecimal.ZERO) > 0)
 					score = BigDecimal.ONE;
@@ -47,7 +49,7 @@ public class GenerateWordCloud
 					score = new BigDecimal("-1");
 				else
 					score = BigDecimal.ZERO;
-				String soPmiScore = word + ":" + score;
+				String soPmiScore = word + "\t" + score;
 				soPmi.add(soPmiScore);
 			}
 		}
@@ -73,16 +75,18 @@ public class GenerateWordCloud
 			// skip first 4 lines
 			for (int i = 0; i < 4; i++)
 				scanner.nextLine();
-
+			
 			while (scanner.hasNextLine())
 			{
 				String[] input = scanner.nextLine().toLowerCase().split(",");
 				String word = input[0];
 				BigDecimal score = BigDecimal.ZERO.setScale(5);
-				for (int i = 1; i <= 14; i++)
+				for (int i = 1; i <= 7; i++)
 					score = score.add(new BigDecimal(input[i]));
+				for (int i = 8; i <= 14; i++)
+					score = score.subtract(new BigDecimal(input[i]));
 
-				String soPmiScore = word + ":" + score;
+				String soPmiScore = word + "\t" + score;
 				soPmi.add(soPmiScore);
 			}
 		}
