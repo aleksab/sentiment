@@ -14,10 +14,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 
 import no.hioa.sentiment.pmi.DefaultPmiCalculator;
 import no.hioa.sentiment.pmi.DefaultPmiCalculator.PmiResult;
@@ -51,20 +53,33 @@ public class NewsletterData
 	{
 		PropertyConfigurator.configure("log4j.properties");
 
-		// new NewsletterData().extractMostCommonWords(new File("target/topwords.txt"), Collections.<String> emptyList(), -1);
-		// new NewsletterData().extractMostCommonWords(new File("target/topwords.txt"), SeedProvider.getStopWords(), 10000);
+		// new NewsletterData().extractMostCommonWords(new
+		// File("target/topwords.txt"), Collections.<String> emptyList(), -1);
+		// new NewsletterData().extractMostCommonWords(new
+		// File("target/topwords.txt"), SeedProvider.getStopWords(), 10000);
 		// new NewsletterData().countWords(new File("target/topwords.txt"));
-		// new NewsletterData().countWords(new File("target/topwords.stripped.txt"));
-		// new NewsletterData().removeStopWords(new File("target/topwords.txt"), new File("target/topwords.stripped.txt"),
+		// new NewsletterData().countWords(new
+		// File("target/topwords.stripped.txt"));
+		// new NewsletterData().removeStopWords(new File("target/topwords.txt"),
+		// new File("target/topwords.stripped.txt"),
 		// SeedProvider.getStopWords());
 		// new NewsletterData().findArticlesForWord("målemani");
-		// new NewsletterData(args[0]).calculatePmiForAllWords(new File("target/topwords.stripped.txt"), 5000, 5);
-		// new NewsletterData(args[0]).calculatePmiForAllWords(new File("target/topwords.stripped.txt"), 5000, 10);
-		// new NewsletterData(args[0]).calculatePmiForAllWords(new File("target/topwords.stripped.txt"), 10000, 100);
+		// new NewsletterData(args[0]).calculatePmiForAllWords(new
+		// File("target/topwords.stripped.txt"), 5000, 5);
+		// new NewsletterData(args[0]).calculatePmiForAllWords(new
+		// File("target/topwords.stripped.txt"), 5000, 10);
+		// new NewsletterData(args[0]).calculatePmiForAllWords(new
+		// File("target/topwords.stripped.txt"), 10000, 100);
 
-		// new NewsletterData(args[0]).makeNorwegianClearScript(new File("target/topwords.stripped.txt"), 10000);
+		// new NewsletterData(args[0]).makeNorwegianClearScript(new
+		// File("target/topwords.stripped.txt"), 10000);
 
 		new NewsletterData(args[0]).findAllArticles("dritt", "god", 100, new File("target/dritt.god.txt"), new File("target/dritt.god.d.txt"));
+	}
+	
+	public NewsletterData() 
+	{
+		
 	}
 
 	public NewsletterData(String host) throws UnknownHostException
@@ -102,9 +117,35 @@ public class NewsletterData
 		writter2.close();
 	}
 
-	private boolean isWithinBlock(String content, String word1, String word2, int distance)
+	boolean isWithinBlock(String content, String word1, String word2, int distance)
 	{
-		content.indexOf(word1);
+		List<Integer> word1Index = new LinkedList<>();
+		List<Integer> word2Index = new LinkedList<>();
+		String[] words = content.replaceAll("/[^a-zA-ZøæåØÆÅ\\s]/g", "").split(" ");
+
+		for (int i = 0; i < words.length; i++)
+		{
+			String word = words[i].toLowerCase();
+			if (word.equalsIgnoreCase(word1))
+			{
+				word1Index.add(i);
+			}
+			if (word.equalsIgnoreCase(word2))
+			{
+				word2Index.add(i);
+			}
+		}
+
+		for (Integer i : word1Index)
+		{
+			for (Integer j : word2Index)
+			{
+				int wordDistance = Math.abs(i - j);
+				if (wordDistance <= distance)
+					return true;
+			}
+		}
+
 		return false;
 	}
 
