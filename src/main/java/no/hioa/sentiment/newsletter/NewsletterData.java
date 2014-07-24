@@ -43,6 +43,7 @@ public class NewsletterData
 	private static final Logger	logger			= LoggerFactory.getLogger("fileLogger");
 	private static final Logger	consoleLogger	= LoggerFactory.getLogger("stdoutLogger");
 
+	private MongoOperations		mongoOperations;
 	private ArticleRepository	repository;
 	private String				host			= null;
 
@@ -69,7 +70,7 @@ public class NewsletterData
 	public NewsletterData(String host) throws UnknownHostException
 	{
 		this.host = host;
-		MongoOperations mongoOperations = MongoProvider.getMongoProvider(host, Corpus.NEWSPAPER_ARTICLES);
+		mongoOperations = MongoProvider.getMongoProvider(host, Corpus.NEWSPAPER_ARTICLES);
 
 		RepositoryFactorySupport factory = new MongoRepositoryFactory(mongoOperations);
 		this.repository = factory.getRepository(ArticleRepository.class);
@@ -78,9 +79,7 @@ public class NewsletterData
 	public void findAllArticles(String word1, String word2, File outputFile) throws UnknownHostException, FileNotFoundException,
 			UnsupportedEncodingException
 	{
-		MongoOperations mongoOperations = MongoProvider.getMongoProvider(Corpus.NEWSPAPER_ARTICLES);
-
-		BasicQuery textQuery = new BasicQuery("{ $text: { $search: \"'" + word1 + "' '" + word2 + "'\" } }");
+		BasicQuery textQuery = new BasicQuery("{ $text: { $search: \"\\\"" + word1 + "\\\" \\\"" + word2 + "\\\"\" } }");
 		long articles = mongoOperations.count(textQuery, Article.class);
 
 		logger.info("Found {} articles with word {} and {}", articles, word1, word2);
