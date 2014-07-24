@@ -14,8 +14,8 @@ public class GenerateWordCloud
 {
 	public static void main(String[] args) throws FileNotFoundException, UnsupportedEncodingException
 	{
-		new GenerateWordCloud().generateSoPMI(new File("src/main/resources/no/hioa/sentiment/wordcloud/pmi.d100.csv"), new File(
-				"target/sopmi-d100.txt"));
+		new GenerateWordCloud().generateSoPMI(new File("src/main/resources/no/hioa/sentiment/wordcloud/pmi-forum.d100.csv"), new File(
+				"target/sopmi-forum.d100.txt"));
 	}
 
 	public void generateSoPMI(File pmiFile, File soPmiFile) throws FileNotFoundException, UnsupportedEncodingException

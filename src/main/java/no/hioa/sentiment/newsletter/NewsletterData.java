@@ -57,11 +57,13 @@ public class NewsletterData
 		// new NewsletterData().removeStopWords(new File("target/topwords.txt"), new File("target/topwords.stripped.txt"),
 		// SeedProvider.getStopWords());
 		// new NewsletterData().findArticlesForWord("målemani");
-		//new NewsletterData(args[0]).calculatePmiForAllWords(new File("target/topwords.stripped.txt"), 5000, 5);
-		//new NewsletterData(args[0]).calculatePmiForAllWords(new File("target/topwords.stripped.txt"), 5000, 10);
-		new NewsletterData(args[0]).calculatePmiForAllWords(new File("target/topwords.stripped.txt"), 10000, 100);
-		
-		//new NewsletterData(args[0]).makeNorwegianClearScript(new File("target/topwords.stripped.txt"), 10000);
+		// new NewsletterData(args[0]).calculatePmiForAllWords(new File("target/topwords.stripped.txt"), 5000, 5);
+		// new NewsletterData(args[0]).calculatePmiForAllWords(new File("target/topwords.stripped.txt"), 5000, 10);
+		// new NewsletterData(args[0]).calculatePmiForAllWords(new File("target/topwords.stripped.txt"), 10000, 100);
+
+		// new NewsletterData(args[0]).makeNorwegianClearScript(new File("target/topwords.stripped.txt"), 10000);
+
+		new NewsletterData(args[0]).findAllArticles("dritt", "god", new File("target/dritt.god.txt"));
 	}
 
 	public NewsletterData(String host) throws UnknownHostException
@@ -73,8 +75,29 @@ public class NewsletterData
 		this.repository = factory.getRepository(ArticleRepository.class);
 	}
 
+	public void findAllArticles(String word1, String word2, File outputFile) throws UnknownHostException, FileNotFoundException,
+			UnsupportedEncodingException
+	{
+		MongoOperations mongoOperations = MongoProvider.getMongoProvider(Corpus.NEWSPAPER_ARTICLES);
+
+		BasicQuery textQuery = new BasicQuery("{ $text: { $search: \"'" + word1 + "' '" + word2 + "'\" } }");
+		long articles = mongoOperations.count(textQuery, Article.class);
+
+		logger.info("Found {} articles with word {} and {}", articles, word1, word2);
+
+		PrintWriter writter = new PrintWriter(outputFile, "UTF-8");
+		List<Article> articleList = mongoOperations.find(textQuery, Article.class);
+		for (Article article : articleList)
+		{
+			writter.write("Article " + article.getId() + " has content:+n");
+			writter.write(article.getContent() + "\n\n");
+		}
+
+		writter.close();
+	}
+
 	public void makeNorwegianClearScript(File wordFile, long maxWords) throws UnknownHostException, FileNotFoundException,
-	UnsupportedEncodingException
+			UnsupportedEncodingException
 	{
 		List<String> targetWords = new LinkedList<>();
 
@@ -85,9 +108,9 @@ public class NewsletterData
 			{
 				String input = scanner.nextLine().toLowerCase();
 				targetWords.add(input.split(":")[0]);
-				
+
 				if (counter++ == maxWords)
-					break;				
+					break;
 			}
 		}
 		catch (Exception ex)
@@ -96,9 +119,9 @@ public class NewsletterData
 		}
 
 		consoleLogger.info("Found {} words", targetWords.size());
-		
+
 		List<String> noWords = new LinkedList<>();
-		
+
 		for (String targetWord : targetWords)
 		{
 			if (targetWord.contains("æ") || targetWord.contains("ø") || targetWord.contains("å"))
@@ -106,18 +129,19 @@ public class NewsletterData
 		}
 
 		consoleLogger.info("Found {} norwegian words", noWords.size());
-		
+
 		PrintWriter noWritter = new PrintWriter("target/clear.no.js", "UTF-8");
-		
+
 		for (String noWord : noWords)
 		{
 			noWritter.append("print(JSON.stringify(db.wordBlock.remove({ word : '" + noWord + "' })));\n");
 			noWritter.append("print(JSON.stringify(db.wordOccurence.remove({ word : '" + noWord + "' })));\n");
-			noWritter.append("print(JSON.stringify(db.wordDistance.remove({ $or : [ { word1 : '" + noWord + "' }, { word2 : '" + noWord + "'} ] })));\n");
-		}		
+			noWritter.append("print(JSON.stringify(db.wordDistance.remove({ $or : [ { word1 : '" + noWord + "' }, { word2 : '" + noWord
+					+ "'} ] })));\n");
+		}
 		noWritter.close();
 	}
-	
+
 	public void calculatePmiForAllWords(File wordFile, long maxWords, int maxDistance) throws UnknownHostException, FileNotFoundException,
 			UnsupportedEncodingException
 	{
