@@ -64,7 +64,7 @@ public class NewsletterData
 
 		// new NewsletterData(args[0]).makeNorwegianClearScript(new File("target/topwords.stripped.txt"), 10000);
 
-		new NewsletterData(args[0]).findAllArticles("dritt", "god", new File("target/dritt.god.txt"));
+		new NewsletterData(args[0]).findAllArticles("dritt", "god", 100, new File("target/dritt.god.txt"), new File("target/dritt.god.d.txt"));
 	}
 
 	public NewsletterData(String host) throws UnknownHostException
@@ -76,8 +76,8 @@ public class NewsletterData
 		this.repository = factory.getRepository(ArticleRepository.class);
 	}
 
-	public void findAllArticles(String word1, String word2, File outputFile) throws UnknownHostException, FileNotFoundException,
-			UnsupportedEncodingException
+	public void findAllArticles(String word1, String word2, int distance, File outputFile, File outputFile2) throws UnknownHostException,
+			FileNotFoundException, UnsupportedEncodingException
 	{
 		BasicQuery textQuery = new BasicQuery("{ $text: { $search: \"\\\"" + word1 + "\\\" \\\"" + word2 + "\\\"\" } }");
 		long articles = mongoOperations.count(textQuery, Article.class);
@@ -85,14 +85,27 @@ public class NewsletterData
 		logger.info("Found {} articles with word {} and {}", articles, word1, word2);
 
 		PrintWriter writter = new PrintWriter(outputFile, "UTF-8");
+		PrintWriter writter2 = new PrintWriter(outputFile2, "UTF-8");
 		List<Article> articleList = mongoOperations.find(textQuery, Article.class);
 		for (Article article : articleList)
 		{
-			writter.write("Article " + article.getId() + " has content:+n");
+			writter.write("Article " + article.getId() + " has content:\n");
 			writter.write(article.getContent() + "\n\n");
-		}
 
+			if (isWithinBlock(article.getContent(), word1, word2, distance))
+			{
+				writter2.write("Article " + article.getId() + " has content withint distance:\n");
+				writter2.write(article.getContent() + "\n\n");
+			}
+		}
 		writter.close();
+		writter2.close();
+	}
+
+	private boolean isWithinBlock(String content, String word1, String word2, int distance)
+	{
+		content.indexOf(word1);
+		return false;
 	}
 
 	public void makeNorwegianClearScript(File wordFile, long maxWords) throws UnknownHostException, FileNotFoundException,
