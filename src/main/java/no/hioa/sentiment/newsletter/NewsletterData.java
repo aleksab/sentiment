@@ -63,7 +63,7 @@ public class NewsletterData
 		// new NewsletterData().removeStopWords(new File("target/topwords.txt"),
 		// new File("target/topwords.stripped.txt"),
 		// SeedProvider.getStopWords());
-		// new NewsletterData().findArticlesForWord("målemani");
+		// new NewsletterData().findArticlesForWord("mï¿½lemani");
 		// new NewsletterData(args[0]).calculatePmiForAllWords(new
 		// File("target/topwords.stripped.txt"), 5000, 5);
 		// new NewsletterData(args[0]).calculatePmiForAllWords(new
@@ -74,7 +74,7 @@ public class NewsletterData
 		// new NewsletterData(args[0]).makeNorwegianClearScript(new
 		// File("target/topwords.stripped.txt"), 10000);
 
-		new NewsletterData(args[0]).findAllArticles("dritt", "god", 100, new File("target/dritt.god.txt"), new File("target/dritt.god.d.txt"));
+		new NewsletterData(args[0]).findAllArticles("dritt", "dÃ¥rlig", 100, new File("target/dritt.darlig.txt"), new File("target/dritt.darlig.d.txt"));
 	}
 	
 	public NewsletterData() 
@@ -121,7 +121,7 @@ public class NewsletterData
 	{
 		List<Integer> word1Index = new LinkedList<>();
 		List<Integer> word2Index = new LinkedList<>();
-		String[] words = content.replaceAll("/[^a-zA-ZøæåØÆÅ\\s]/g", "").split(" ");
+		String[] words = content.replaceAll("/[^a-zA-Zï¿½ï¿½ï¿½ï¿½ï¿½ï¿½\\s]/g", "").split(" ");
 
 		for (int i = 0; i < words.length; i++)
 		{
@@ -177,7 +177,7 @@ public class NewsletterData
 
 		for (String targetWord : targetWords)
 		{
-			if (targetWord.contains("æ") || targetWord.contains("ø") || targetWord.contains("å"))
+			if (targetWord.contains("ï¿½") || targetWord.contains("ï¿½") || targetWord.contains("ï¿½"))
 				noWords.add(targetWord);
 		}
 
