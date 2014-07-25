@@ -196,7 +196,7 @@ public class DefaultPmiCalculator implements PmiCalculator
 		{
 			logger.info("Word {} and {} does not exists in lookup table", word1, word2);
 
-			BasicQuery textQuery = new BasicQuery("{ $text: { $search: \"'" + word1 + "' '" + word2 + "'\" } }");
+			BasicQuery textQuery = new BasicQuery("{ $text: { $search: \"" + word1 + " " + word2 + "\" } }");
 			String mapFunction = getJsFileContent(new File("src/main/resources/no/hioa/sentiment/pmi/map_distance.js")).replaceAll("%WORD1%", word1).replaceAll(
 					"%WORD2%", word2);
 			String reduceFunction = getJsFileContent(new File("src/main/resources/no/hioa/sentiment/pmi/reduce.js"));
