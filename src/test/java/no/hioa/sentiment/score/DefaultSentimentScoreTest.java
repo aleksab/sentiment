@@ -8,8 +8,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
 
-import no.hioa.sentiment.review.ReviewData;
 import no.hioa.sentiment.review.Review;
+import no.hioa.sentiment.review.ReviewData;
 import no.hioa.sentiment.review.ReviewType;
 import no.hioa.sentiment.service.Corpus;
 import no.hioa.sentiment.testdata.TestData;
@@ -17,6 +17,7 @@ import no.hioa.sentiment.testdata.TestData;
 import org.apache.log4j.PropertyConfigurator;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class DefaultSentimentScoreTest
@@ -37,7 +38,7 @@ public class DefaultSentimentScoreTest
 		List<SentimentWord> sentimentList = new LinkedList<>();
 		sentimentList.add(new SentimentWord("beste", new BigDecimal("5")));
 
-		List<Score> result = score.getSentimentScore(ReviewType.FILMWEB, sentimentList, Collections.<String> emptyList());
+		List<Score> result = score.getSentimentScore(ReviewType.FILMWEB, sentimentList, Collections.<String> emptyList(), true);
 		Assert.assertEquals(0, result.size());
 	}
 
@@ -50,7 +51,7 @@ public class DefaultSentimentScoreTest
 		Review review = new Review("link", 5, "Test review", "Dette er en super bra film som får maks brahet! Det er kjempe bra sier de!", "author",
 				"date", ReviewType.FILMWEB);
 
-		Score result = score.calculateSimpleSentimentScoreWithShifter(sentimentList, Collections.<String> emptyList(), review);
+		Score result = score.calculateSimpleSentimentScoreWithShifter(sentimentList, Collections.<String> emptyList(), review, true);
 		Assert.assertEquals(new BigDecimal("0.63"), result.getSentimentScore());
 	}
 
@@ -63,7 +64,7 @@ public class DefaultSentimentScoreTest
 		Review review = new Review("link", 5, "Test review", "Dette er en super bra film som får dårlig uttelling, men elles ganske bra!", "author",
 				"date", ReviewType.FILMWEB);
 
-		Score result = score.calculateSimpleSentimentScoreWithShifter(sentimentList, Collections.<String> emptyList(), review);
+		Score result = score.calculateSimpleSentimentScoreWithShifter(sentimentList, Collections.<String> emptyList(), review, true);
 		Assert.assertEquals(new BigDecimal("0.36"), result.getSentimentScore());
 	}
 
@@ -76,7 +77,7 @@ public class DefaultSentimentScoreTest
 		Review review = new Review("link", 5, "Test review",
 				"Dette er en veldig dårlig film. Noe av det dårligste jeg har sett faktisk. Så dårlig er den!", "author", "date", ReviewType.FILMWEB);
 
-		Score result = score.calculateSimpleSentimentScoreWithShifter(sentimentList, Collections.<String> emptyList(), review);
+		Score result = score.calculateSimpleSentimentScoreWithShifter(sentimentList, Collections.<String> emptyList(), review, true);
 		Assert.assertEquals(new BigDecimal("-0.56"), result.getSentimentScore());
 	}
 
@@ -88,8 +89,34 @@ public class DefaultSentimentScoreTest
 		sentimentList.add(new SentimentWord("dårlig", new BigDecimal("-5")));
 		Review review = new Review("link", 5, "Test review", "", "author", "date", ReviewType.FILMWEB);
 
-		Score result = score.calculateSimpleSentimentScoreWithShifter(sentimentList, Collections.<String> emptyList(), review);
+		Score result = score.calculateSimpleSentimentScoreWithShifter(sentimentList, Collections.<String> emptyList(), review, true);
 		Assert.assertEquals(new BigDecimal("0.00"), result.getSentimentScore());
+	}
+	
+	@Test
+	public void testCalculateSimpleSentimentScore5() throws Exception
+	{
+		List<SentimentWord> sentimentList = new LinkedList<>();
+		sentimentList.add(new SentimentWord("bra", new BigDecimal("5")));
+		sentimentList.add(new SentimentWord("dårlig", new BigDecimal("-5")));
+		Review review = new Review("link", 5, "Test review",
+				"Dette er en veldig dårlig film. Noe av det dårligste jeg har sett faktisk. Så dårlig er den!", "author", "date", ReviewType.FILMWEB);
+
+		Score result = score.calculateSimpleSentimentScoreWithShifter(sentimentList, Collections.<String> emptyList(), review, false);
+		Assert.assertEquals(new BigDecimal("-1.00"), result.getSentimentScore());
+	}
+	
+	@Test
+	public void testCalculateSimpleSentimentScore6() throws Exception
+	{
+		List<SentimentWord> sentimentList = new LinkedList<>();
+		sentimentList.add(new SentimentWord("bra", new BigDecimal("5")));
+		sentimentList.add(new SentimentWord("dårlig", new BigDecimal("-5")));
+		Review review = new Review("link", 5, "Test review", "Dette er en super bra film som får dårlig uttelling, men elles ganske bra!", "author",
+				"date", ReviewType.FILMWEB);
+
+		Score result = score.calculateSimpleSentimentScoreWithShifter(sentimentList, Collections.<String> emptyList(), review, false);
+		Assert.assertEquals(new BigDecimal("0.34"), result.getSentimentScore());
 	}
 
 	@Test
@@ -104,7 +131,7 @@ public class DefaultSentimentScoreTest
 		Review review = new Review("link", 5, "Test review", "Dette er ikke en bra film! Den er skikkelig dårlig!", "author", "date",
 				ReviewType.FILMWEB);
 
-		Score result = score.calculateSimpleSentimentScoreWithShifter(sentimentList, shifters, review);
+		Score result = score.calculateSimpleSentimentScoreWithShifter(sentimentList, shifters, review, true);
 		Assert.assertEquals(new BigDecimal("-1.00"), result.getSentimentScore());
 	}
 
@@ -120,7 +147,7 @@ public class DefaultSentimentScoreTest
 		Review review = new Review("link", 5, "Test review", "Dette er ikke ikke bra film! Den er skikkelig dårlig!", "author", "date",
 				ReviewType.FILMWEB);
 
-		Score result = score.calculateSimpleSentimentScoreWithShifter(sentimentList, shifters, review);
+		Score result = score.calculateSimpleSentimentScoreWithShifter(sentimentList, shifters, review, true);
 		Assert.assertEquals(new BigDecimal("0.00"), result.getSentimentScore());
 	}
 
@@ -136,11 +163,12 @@ public class DefaultSentimentScoreTest
 		Review review = new Review("link", 5, "Test review", "For å ikke si at dette er en bra film! Den er skikkelig bra!", "author", "date",
 				ReviewType.FILMWEB);
 
-		Score result = score.calculateSimpleSentimentScoreWithShifter(sentimentList, shifters, review);
+		Score result = score.calculateSimpleSentimentScoreWithShifter(sentimentList, shifters, review, true);
 		Assert.assertEquals(new BigDecimal("0.72"), result.getSentimentScore());
 	}
 
 	@Test
+	@Ignore
 	public void testCalculateComplexSentimentScoreWithShifter() throws Exception
 	{
 		ReviewData data = new ReviewData();

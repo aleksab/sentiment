@@ -145,7 +145,18 @@ public class SentimentWs
 			{
 				DefaultSentimentScore score = new DefaultSentimentScore(Corpus.REVIEWS);
 				ReviewType type = ReviewType.getEnum(request.getType());
-				return new SentimentScoreResponse(score.getSentimentScore(type, request.getSentimentList(), request.getShifterList()));
+				return new SentimentScoreResponse(score.getSentimentScore(type, request.getSentimentList(), request.getShifterList(), true));
+			}
+		});
+		
+		post(new SentimentScoreWrapper("/sentiment/score2")
+		{
+			@Override
+			public SentimentScoreResponse handle(SentimentScoreRequest request) throws UnknownHostException
+			{
+				DefaultSentimentScore score = new DefaultSentimentScore(Corpus.REVIEWS);
+				ReviewType type = ReviewType.getEnum(request.getType());
+				return new SentimentScoreResponse(score.getSentimentScore(type, request.getSentimentList(), request.getShifterList(), false));
 			}
 		});
 

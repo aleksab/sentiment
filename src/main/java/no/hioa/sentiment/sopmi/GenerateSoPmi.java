@@ -293,7 +293,7 @@ public class GenerateSoPmi
 	{
 		try
 		{
-			PrintWriter writter = new PrintWriter("target/" + file, "ISO-8859-1");
+			PrintWriter writter = new PrintWriter("target/" + file, "UTF-8");
 			for (String word : soPmi.keySet())
 			{
 				writter.append(word + "\t" + soPmi.get(word) + "\n");

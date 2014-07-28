@@ -37,7 +37,7 @@ public class DefaultSentimentScore implements SentimentScore
 	 * fetching all.
 	 */
 	@Override
-	public List<Score> getSentimentScore(ReviewType type, List<SentimentWord> sentimentList, List<String> shifters)
+	public List<Score> getSentimentScore(ReviewType type, List<SentimentWord> sentimentList, List<String> shifters, boolean avgSum)
 	{
 		BasicQuery query = new BasicQuery("{ type : '" + type.getName().toUpperCase() + "' }");
 		List<Review> reviews = mongoOperations.find(query, Review.class);
@@ -45,11 +45,11 @@ public class DefaultSentimentScore implements SentimentScore
 
 		for (Review review : reviews)
 		{
-			scores.add(calculateSimpleSentimentScoreWithShifter(sentimentList, shifters, review));
+			scores.add(calculateSimpleSentimentScoreWithShifter(sentimentList, shifters, review, avgSum));
 		}
 
 		return scores;
-	}
+	}	
 
 	/**
 	 * A very simple scoring implementation. We basically go through every word
@@ -63,11 +63,12 @@ public class DefaultSentimentScore implements SentimentScore
 	 * @param review
 	 * @return
 	 */
-	Score calculateSimpleSentimentScoreWithShifter(List<SentimentWord> sentimentList, List<String> shifters, Review review)
+	Score calculateSimpleSentimentScoreWithShifter(List<SentimentWord> sentimentList, List<String> shifters, Review review, boolean avgSum)
 	{
 		logger.info("Calculating sentiment score for review {}", review.getId());
 
 		BigDecimal sentimentScore = BigDecimal.ZERO.setScale(2);
+		BigDecimal absSentimentScore = BigDecimal.ZERO.setScale(2);
 		String[] words = WordUtil.getWords(review.getContent());
 
 		boolean shouldShift = false;
@@ -103,7 +104,8 @@ public class DefaultSentimentScore implements SentimentScore
 						score = score.negate();
 
 					sentimentScore = sentimentScore.add(score);
-
+					absSentimentScore = absSentimentScore.add(score.abs());
+					
 					// we assume that a sentiment word can only occur once
 					break;
 				}
@@ -111,7 +113,12 @@ public class DefaultSentimentScore implements SentimentScore
 		}
 
 		if (words.length > 0)
-			sentimentScore = sentimentScore.divide(new BigDecimal(words.length), RoundingMode.UP);
+		{
+			if (avgSum)
+				sentimentScore = sentimentScore.divide(new BigDecimal(words.length), RoundingMode.UP);
+			else
+				sentimentScore = sentimentScore.divide(absSentimentScore, RoundingMode.UP);
+		}
 
 		return new Score(review.getId(), review.getRating(), sentimentScore);
 	}

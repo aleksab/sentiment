@@ -14,5 +14,5 @@ public interface SentimentScore
 	 * @param shifters
 	 * @return
 	 */
-	public List<Score> getSentimentScore(ReviewType type, List<SentimentWord> sentimentList, List<String> shifters);
+	public List<Score> getSentimentScore(ReviewType type, List<SentimentWord> sentimentList, List<String> shifters, boolean avgSum);	
 }
