@@ -116,8 +116,10 @@ public class DefaultSentimentScore implements SentimentScore
 		{
 			if (avgSum)
 				sentimentScore = sentimentScore.divide(new BigDecimal(words.length), RoundingMode.UP);
+			else if (absSentimentScore.compareTo(BigDecimal.ZERO) == 0)
+				sentimentScore = BigDecimal.ZERO;
 			else
-				sentimentScore = sentimentScore.divide(absSentimentScore, RoundingMode.UP);
+				sentimentScore = sentimentScore.divide(absSentimentScore, RoundingMode.UP);			
 		}
 
 		return new Score(review.getId(), review.getRating(), sentimentScore);

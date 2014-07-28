@@ -118,6 +118,19 @@ public class DefaultSentimentScoreTest
 		Score result = score.calculateSimpleSentimentScoreWithShifter(sentimentList, Collections.<String> emptyList(), review, false);
 		Assert.assertEquals(new BigDecimal("0.34"), result.getSentimentScore());
 	}
+	
+	@Test
+	public void testCalculateSimpleSentimentScore7() throws Exception
+	{
+		List<SentimentWord> sentimentList = new LinkedList<>();
+		//sentimentList.add(new SentimentWord("bra", new BigDecimal("5")));
+		//sentimentList.add(new SentimentWord("dårlig", new BigDecimal("-5")));
+		Review review = new Review("link", 5, "Test review", "Dette er en super bra film som får dårlig uttelling, men elles ganske bra!", "author",
+				"date", ReviewType.FILMWEB);
+
+		Score result = score.calculateSimpleSentimentScoreWithShifter(sentimentList, Collections.<String> emptyList(), review, false);
+		Assert.assertEquals(new BigDecimal("0"), result.getSentimentScore());
+	}
 
 	@Test
 	public void testCalculateSimpleSentimentScoreWithShifter() throws Exception
