@@ -25,10 +25,13 @@ import com.beust.jcommander.Parameter;
 
 public class TrustAlgoReview
 {
-	private static final Logger	logger			= LoggerFactory.getLogger("stdoutLogger");
+	private static final Logger	logger	= LoggerFactory.getLogger("stdoutLogger");
 
-	@Parameter(names = "-file", description = "File with sentiment score", required = true)
-	private String				sentimentScore	= "";
+	@Parameter(names = "-file", description = "File with sentiment score", required = false)
+	private String				file	= null;
+
+	@Parameter(names = "-folder", description = "File with sentiment score", required = false)
+	private String				folder	= null;
 
 	public static void main(String[] args)
 	{
@@ -40,14 +43,26 @@ public class TrustAlgoReview
 	{
 		new JCommander(this, args);
 
-		rateReviews(ReviewType.FILMWEB);
-		rateReviews(ReviewType.KOMPLETT);
-		rateReviews(ReviewType.MPX);
+		if (folder != null)
+		{
+			for (File file : new File(folder).listFiles())
+			{
+				rateReviews(ReviewType.FILMWEB, file.getAbsolutePath());
+				rateReviews(ReviewType.KOMPLETT, file.getAbsolutePath());
+				rateReviews(ReviewType.MPX, file.getAbsolutePath());
+			}
+		}
+		else
+		{
+			rateReviews(ReviewType.FILMWEB, file);
+			rateReviews(ReviewType.KOMPLETT, file);
+			rateReviews(ReviewType.MPX, file);
+		}
 	}
 
-	public void rateReviews(ReviewType type)
+	public void rateReviews(ReviewType type, String file)
 	{
-		List<SentimentWord> sentimentWords = getSentimentWords(new File(sentimentScore));
+		List<SentimentWord> sentimentWords = getSentimentWords(new File(file));
 		List<String> shifters = new LinkedList<>();
 		shifters.add("ikke");
 
@@ -58,7 +73,7 @@ public class TrustAlgoReview
 			List<Score> scores = scorer.getSentimentScore(type, sentimentWords, shifters, true);
 			logger.info("Calculated {} scores", scores.size());
 
-			Path newFile = Paths.get("target/", new File(sentimentScore).getName() + "-" + type.getName() + ".score");
+			Path newFile = Paths.get("target/", new File(file).getName() + "-" + type.getName() + ".score");
 
 			try (BufferedWriter writer = Files.newBufferedWriter(newFile, Charset.defaultCharset()))
 			{
