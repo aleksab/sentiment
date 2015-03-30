@@ -81,9 +81,10 @@ public class RunOcr
 		{
 			File tmpFile = File.createTempFile("result", ".txt");
 			logger.info("Running OCR of {}", path);
-			performRecognition("English", path, tmpFile.getAbsolutePath());
-
-			return getFileContent(tmpFile);
+			if (performRecognition("English", path, tmpFile.getAbsolutePath()))	
+				return getFileContent(tmpFile);
+			else
+				return null;
 		}
 		catch (Exception ex)
 		{
@@ -92,7 +93,7 @@ public class RunOcr
 		}
 	}
 
-	private void performRecognition(String language, String filePath, String outputPath) throws Exception
+	private boolean performRecognition(String language, String filePath, String outputPath) throws Exception
 	{
 		ProcessingSettings.OutputFormat outputFormat = ProcessingSettings.OutputFormat.txt;
 		ProcessingSettings settings = new ProcessingSettings();
@@ -101,7 +102,7 @@ public class RunOcr
 
 		Task task = restClient.processImage(filePath, settings);;
 
-		waitAndDownloadResult(task, outputPath);
+		return waitAndDownloadResult(task, outputPath);
 	}
 
 	/**
@@ -136,7 +137,7 @@ public class RunOcr
 	/**
 	 * Wait until task processing finishes and download result.
 	 */
-	private void waitAndDownloadResult(Task task, String outputPath) throws Exception
+	private boolean waitAndDownloadResult(Task task, String outputPath) throws Exception
 	{
 		task = waitForCompletion(task);
 
@@ -145,6 +146,7 @@ public class RunOcr
 			System.out.println("Downloading..");
 			restClient.downloadResult(task, outputPath);
 			System.out.println("Ready");
+			return true;
 		}
 		else if (task.Status == Task.TaskStatus.NotEnoughCredits)
 		{
@@ -155,6 +157,7 @@ public class RunOcr
 			System.out.println("Task failed");
 		}
 
+		return false;
 	}
 
 	private String getFileContent(File file)
