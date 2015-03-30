@@ -115,6 +115,11 @@
 			<artifactId>unbescape</artifactId>
 			<version>1.0</version>
 		</dependency>
+		<dependency>
+			<groupId>org.msgpack</groupId>
+			<artifactId>msgpack</artifactId>
+			<version>0.6.11</version>
+		</dependency>
 	</dependencies>
 
 	<repositories>
