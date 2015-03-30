@@ -54,11 +54,18 @@ public class RunOcr
 		{
 			if (StringUtils.endsWithIgnoreCase(file.getName(), ".pdf"))
 			{
+				String name = StringUtils.substringBefore(file.getName(), ".pdf");
+				String fileName = folder + "/" + name + ".ocr.txt";
+
+				if (new File(fileName).exists())
+				{
+					logger.info("OCR already exists!");
+					continue;
+				}
+
 				String text = getText(file.getAbsolutePath());
 				if (text != null)
 				{
-					String name = StringUtils.substringBefore(file.getName(), ".pdf");
-					String fileName = folder + "/" + name + ".ocr.txt";
 					FileUtils.writeStringToFile(new File(fileName), text);
 					logger.info("OCR done!");
 				}
