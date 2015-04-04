@@ -42,11 +42,11 @@ public class AutoCorrect
 	public void compareAutoCorrect() throws Exception
 	{
 		Set<String> dictionary = buildDictionary(new File(dictionaryFolder));
+
 		for (File file : new File(inputFolder).listFiles())
 		{
-
 			File output = new File(outputFolder + "/" + file.getName());
-			autoCorrect(file, output);
+			autoCorrect(dictionary, file, output);
 
 			MatchResult resultBefore = checkDicionaryFile(dictionary, file);
 			MatchResult resultAfter = checkDicionaryFile(dictionary, output);
@@ -57,10 +57,8 @@ public class AutoCorrect
 		}
 	}
 
-	public void autoCorrect(File input, File output) throws Exception
+	public void autoCorrect(Set<String> dictionary, File input, File output) throws Exception
 	{
-		Set<String> dictionary = buildDictionary(new File(dictionaryFolder));
-
 		String[] words = FileUtils.readFileToString(input).split(" ");
 		StringBuffer buffer = new StringBuffer();
 
