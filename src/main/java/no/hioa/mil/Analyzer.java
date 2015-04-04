@@ -25,20 +25,19 @@ public class Analyzer
 
 		Analyzer main = new Analyzer();
 		new JCommander(main, args);
-		main.analyzeSecurity(false, new File("C:/Users/Aleksander/Desktop/milcom/AF"),
-				"C:/Users/Aleksander/Desktop/data/classification/not-excised-af.txt");
-		main.analyzeSecurity(false, new File("C:/Users/Aleksander/Desktop/milcom/CH"),
-				"C:/Users/Aleksander/Desktop/data/classification/not-excised-ch.txt");
-		main.analyzeSecurity(false, new File("C:/Users/Aleksander/Desktop/milcom/PH"),
-				"C:/Users/Aleksander/Desktop/data/classification/not-excised-ph.txt");
-		
-		main.analyzeSecurity(true, new File("C:/Users/Aleksander/Desktop/milcom/AF"),
-				"C:/Users/Aleksander/Desktop/data/classification/excised-af.txt");
-		main.analyzeSecurity(true, new File("C:/Users/Aleksander/Desktop/milcom/CH"),
-				"C:/Users/Aleksander/Desktop/data/classification/excised-ch.txt");
-		main.analyzeSecurity(true, new File("C:/Users/Aleksander/Desktop/milcom/PH"),
-				"C:/Users/Aleksander/Desktop/data/classification/excised-ph.txt");
+		// main.analyzeSecurity(false, new
+		// File("C:/Users/Aleksander/Desktop/milcom/AF"),"C:/Users/Aleksander/Desktop/data/classification/not-excised-af.txt");
+		// main.analyzeSecurity(false, new
+		// File("C:/Users/Aleksander/Desktop/milcom/CH"),"C:/Users/Aleksander/Desktop/data/classification/not-excised-ch.txt");
+		// main.analyzeSecurity(false, new
+		// File("C:/Users/Aleksander/Desktop/milcom/PH"),"C:/Users/Aleksander/Desktop/data/classification/not-excised-ph.txt");
 
+		// main.analyzeSecurity(true, new
+		// File("C:/Users/Aleksander/Desktop/milcom/AF"),"C:/Users/Aleksander/Desktop/data/classification/excised-af.txt");
+		// main.analyzeSecurity(true, new
+		// File("C:/Users/Aleksander/Desktop/milcom/CH"),"C:/Users/Aleksander/Desktop/data/classification/excised-ch.txt");
+		// main.analyzeSecurity(true, new
+		// File("C:/Users/Aleksander/Desktop/milcom/PH"),"C:/Users/Aleksander/Desktop/data/classification/excised-ph.txt");	
 	}
 
 	@SuppressWarnings("unchecked")
@@ -99,6 +98,7 @@ public class Analyzer
 						}
 						else if (matches.size() == 2)
 						{
+							// logger.info("Excised: " + fileName);
 							matches.remove(Classification.EXCISED);
 
 							if (keepExcised)

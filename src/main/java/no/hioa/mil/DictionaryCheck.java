@@ -52,34 +52,55 @@ public class DictionaryCheck
 		return dictionary;
 	}
 
-	public void checkDictionary() throws Exception
+	public double checkDictionary() throws Exception
 	{
 		Set<String> dictionary = buildDictionary(new File(dictionaryFolder));
 
 		double totalMatch = 0;
 		double totalSize = 0;
-		
+
 		for (File file : new File(folder).listFiles())
 		{
-			String[] words = FileUtils.readFileToString(file).split(" ");
+			MatchResult result = checkDicionaryFile(dictionary, file);
 
-			float match = 0;
+			double matchPercentage = (result.match / result.size) * 100;
+			logger.info("Percentage for file {}: {} ({} / {})", file.getName(), matchPercentage, result.match, result.size);
 
-			for (String word : words)
-			{
-				if (dictionary.contains(word))
-					match++;
-			}
-
-			float matchPercentage = (match / (float) words.length) * 100;
-			logger.info("Percentage for file {}: {} ({} / {})", file.getName(), matchPercentage, match, words.length);
-			
-			totalMatch += match;
-			totalSize += words.length;
+			totalMatch += result.match;
+			totalSize += result.size;
 		}
-		
+
 		double totalMatchPercentage = (totalMatch / totalSize) * 100;
 		logger.info("Total percentage: {} ({} / {})", totalMatchPercentage, totalMatch, totalSize);
-		
+
+		return totalMatchPercentage;
+	}
+
+	private MatchResult checkDicionaryFile(Set<String> dictionary, File file) throws Exception
+	{
+		String[] words = FileUtils.readFileToString(file).split(" ");
+
+		float match = 0;
+
+		for (String word : words)
+		{
+			if (dictionary.contains(word))
+				match++;
+		}
+
+		return new MatchResult(match, words.length);
+	}
+
+	private class MatchResult
+	{
+		public double	match;
+		public double	size;
+
+		public MatchResult(double match, double size)
+		{
+			super();
+			this.match = match;
+			this.size = size;
+		}
 	}
 }
