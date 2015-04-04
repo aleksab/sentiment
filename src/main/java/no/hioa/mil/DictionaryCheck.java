@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +39,7 @@ public class DictionaryCheck
 
 		for (File file : folder.listFiles())
 		{
-			if (StringUtils.endsWith(file.getName(), ".dic"))
+			if (file.isFile())
 			{
 				logger.info("Adding {} to dictionary", file.getName());
 				List<String> lines = FileUtils.readLines(file);
