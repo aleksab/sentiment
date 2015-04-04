@@ -1,11 +1,12 @@
 package no.hioa.mil;
 
 import java.io.File;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,13 +16,13 @@ import com.beust.jcommander.Parameter;
 
 public class DictionaryCheck
 {
-	private static final Logger	logger		= LoggerFactory.getLogger("stdoutLogger");
+	private static final Logger	logger				= LoggerFactory.getLogger("stdoutLogger");
 
 	@Parameter(names = "-folder", description = "Folder to check", required = true)
-	private String				folder		= null;
+	private String				folder				= null;
 
 	@Parameter(names = "-dic", description = "Dictionary to check against", required = true)
-	private String				dictionary	= null;
+	private String				dictionaryFolder	= null;
 
 	public static void main(String[] args) throws Exception
 	{
@@ -33,30 +34,41 @@ public class DictionaryCheck
 	}
 
 	@SuppressWarnings("unchecked")
+	public Set<String> buildDictionary(File folder) throws Exception
+	{
+		HashSet<String> dictionary = new HashSet<>();
+
+		for (File file : folder.listFiles())
+		{
+			if (StringUtils.endsWith(file.getName(), ".dic"))
+			{
+				logger.info("Adding {} to dictionary", file.getName());
+				List<String> lines = FileUtils.readLines(file);
+				dictionary.addAll(lines);
+			}
+		}
+
+		logger.info("Dictionary contains {} words", dictionary.size());
+
+		return dictionary;
+	}
+
 	public void checkDictionary() throws Exception
 	{
-		List<String> dicLines = FileUtils.readLines(new File(dictionary));
+		Set<String> dictionary = buildDictionary(new File(dictionaryFolder));
 
 		for (File file : new File(folder).listFiles())
 		{
 			String[] words = FileUtils.readFileToString(file).split(" ");
 
 			float match = 0;
-			float unmatch = 0;
 
 			for (String word : words)
 			{
-				if (dicLines.contains(word))
+				if (dictionary.contains(word))
 					match++;
-				else
-				{
-					unmatch++;
-					// logger.info("Unmatched: " + word);
-				}
 			}
 
-			// logger.info("Matched: " + match);
-			// logger.info("Unmatched: " + unmatch);
 			float matchPercentage = (match / (float) words.length) * 100;
 			logger.info("Percentage for file {}: {} ({} / {})", file.getName(), matchPercentage, match, words.length);
 		}
