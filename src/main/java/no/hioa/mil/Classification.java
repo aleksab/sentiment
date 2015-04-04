@@ -8,76 +8,69 @@ import org.apache.commons.lang.StringUtils;
 
 public enum Classification
 {
-	UNKNOWN("Unknown", new String[]
-	{ "Classification Unknown", "Unknown" }), UNCLASSIFIED("Unclassified", "Unclassified"), CONFIDENTIAL("Confidential", new String[] { "Confidential" }, new String[] { "Fax"}), SECRET(
-			"Secret", new String[]
-			{ "Secret" }, new String[]
-			{ "Secretary", "Top", "Secretarial", "Attachment" }), TOPSECRET(
-					"Top Secret", new String[]
-							{ "Top Secret" }, new String[]
-							{ "Secretary", "Secretarial", "Attachment" }), NONCLASSIFIED("Non-Classified", "Non-Classified"), /* EXCISED("Excised", "Excised"), */ LIMITEDOFFICIAL("Limited Official",
-			"Limited Official"), PUBLICUSE("Public Use", "Public Use"), RESTRICTED("Restricted",
-			"Restricted");
+	TOPSECRET(new String[]{ "Top Secret" }, new String[]{ "Secretary", "Secretarial", "Attachment" }),
+	SECRET(new String[] { "Secret" }, new String[] { "Secretary", "Top", "Secretarial", "Attachment" }),
+	CONFIDENTIAL(new String[] { "Confidential" }, new String[] { "Fax" }), 
+	RESTRICTED("Restricted"),
+	
+	LIMITEDOFFICIAL(new String[] { "Limited Official", "Official Use" }),
+	PUBLICUSE("Public Use"),	
+	EXCISED("Excised"),
+	
+	UNCLASSIFIED("Unclassified"), 	
+	NONCLASSIFIED("Non-Classified"), 
+	UNKNOWN(new String[] { "Classification Unknown", "Unknown" });	
+	
+	private List<String>	matchStrings;
+	private List<String>	doNotMatchStrings;
 
-	private String			name;
-	private List<String>	identifyStrings;
-	private List<String>	doNotIncludeStrings;
-
-	Classification(String name, String identifyString)
+	Classification(String matchString)
 	{
-		this.name = name;
-		this.identifyStrings = Collections.singletonList(identifyString);
-		this.doNotIncludeStrings = new LinkedList<>();
+		this.matchStrings = Collections.singletonList(matchString);
+		this.doNotMatchStrings = new LinkedList<>();
 	}
 
-	Classification(String name, String[] strings)
+	Classification(String[] matchStrings)
 	{
-		this.name = name;
-		this.identifyStrings = new LinkedList<>();
-		this.doNotIncludeStrings = new LinkedList<>();
+		this.matchStrings = new LinkedList<>();
+		this.doNotMatchStrings = new LinkedList<>();
 
-		for (String string : strings)
+		for (String string : matchStrings)
 		{
-			identifyStrings.add(string);
+			this.matchStrings.add(string);
 		}
 	}
 
-	Classification(String name, String[] strings, String[] notInclude)
+	Classification(String[] matchStrings, String[] doNotMatchStrings)
 	{
-		this.name = name;
-		this.identifyStrings = new LinkedList<>();
-		this.doNotIncludeStrings = new LinkedList<>();
+		this.matchStrings = new LinkedList<>();
+		this.doNotMatchStrings = new LinkedList<>();
 
-		for (String string : strings)
+		for (String string : matchStrings)
 		{
-			identifyStrings.add(string);
+			this.matchStrings.add(string);
 		}
 
-		for (String string : notInclude)
+		for (String string : doNotMatchStrings)
 		{
-			doNotIncludeStrings.add(string);
+			this.doNotMatchStrings.add(string);
 		}
 	}
 
-	public String getName()
+	public List<String> getMatchStrings()
 	{
-		return name;
+		return matchStrings;
 	}
 
-	public List<String> getIdentifyStrings()
+	public List<String> getDoNotMatchStrings()
 	{
-		return identifyStrings;
-	}
-
-	public List<String> getDoNotIncludeStrings()
-	{
-		return doNotIncludeStrings;
+		return doNotMatchStrings;
 	}
 
 	@Override
 	public String toString()
 	{
-		return this.getName();
+		return this.name();
 	}
 
 	public static String getPossibleValues()
@@ -85,7 +78,7 @@ public enum Classification
 		String buffer = "";
 
 		for (Classification value : Classification.values())
-			buffer += value.getName() + ", ";
+			buffer += value.name() + ", ";
 
 		return StringUtils.substringBeforeLast(buffer, ", ");
 	}
@@ -94,7 +87,7 @@ public enum Classification
 	{
 		for (Classification re : Classification.values())
 		{
-			if (re.name.compareTo(name) == 0)
+			if (re.name().compareTo(name) == 0)
 			{
 				return re;
 			}
