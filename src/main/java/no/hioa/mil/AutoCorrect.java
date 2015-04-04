@@ -45,6 +45,8 @@ public class AutoCorrect
 
 		for (File file : new File(inputFolder).listFiles())
 		{
+			logger.info("Checking file {}", file.getName());
+			
 			File output = new File(outputFolder + "/" + file.getName());
 			autoCorrect(dictionary, file, output);
 
@@ -75,7 +77,7 @@ public class AutoCorrect
 					{
 						if (StringUtils.getLevenshteinDistance(word, dicWord) == levensteinDistance)
 						{
-							logger.info("Levenstein distance is 1, changing from {} to {}", word, dicWord);
+							//logger.info("Levenstein distance is 1, changing from {} to {}", word, dicWord);
 							word = dicWord;
 							break;
 						}
