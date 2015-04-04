@@ -18,8 +18,11 @@ public class AutoCorrect
 {
 	private static final Logger	logger				= LoggerFactory.getLogger("stdoutLogger");
 
-	@Parameter(names = "-file", description = "File to autocorrect", required = true)
-	private String				file				= null;
+	@Parameter(names = "-input", description = "Folder to get files", required = true)
+	private String				inputFolder			= null;
+
+	@Parameter(names = "-output", description = "Folder to save autocorrected files", required = true)
+	private String				outputFolder		= null;
 
 	@Parameter(names = "-dic", description = "Dictionary to check against", required = true)
 	private String				dictionaryFolder	= null;
@@ -39,17 +42,19 @@ public class AutoCorrect
 	public void compareAutoCorrect() throws Exception
 	{
 		Set<String> dictionary = buildDictionary(new File(dictionaryFolder));
-		File input = new File(file);
+		for (File file : new File(inputFolder).listFiles())
+		{
 
-		File tmpFile = File.createTempFile(input.getName(), "tmp");
+			File output = new File(outputFolder + "/" + file.getName());
+			autoCorrect(file, output);
 
-		autoCorrect(input, tmpFile);
+			MatchResult resultBefore = checkDicionaryFile(dictionary, file);
+			MatchResult resultAfter = checkDicionaryFile(dictionary, output);
 
-		MatchResult resultBefore = checkDicionaryFile(dictionary, input);
-		MatchResult resultAfter = checkDicionaryFile(dictionary, tmpFile);
-
-		logger.info("Total percentage before: {} ({} / {})", ((resultBefore.match / resultBefore.size) * 100), resultBefore.match, resultBefore.size);
-		logger.info("Total percentage after: {} ({} / {})", ((resultAfter.match / resultAfter.size) * 100), resultAfter.match, resultAfter.size);
+			logger.info("Total percentage before: {} ({} / {})", ((resultBefore.match / resultBefore.size) * 100), resultBefore.match,
+					resultBefore.size);
+			logger.info("Total percentage after: {} ({} / {})", ((resultAfter.match / resultAfter.size) * 100), resultAfter.match, resultAfter.size);
+		}
 	}
 
 	public void autoCorrect(File input, File output) throws Exception
