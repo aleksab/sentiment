@@ -10,10 +10,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
 
 public class PostProcessing
 {
-	private static final Logger	logger	= LoggerFactory.getLogger("stdoutLogger");
+	private static final Logger	logger			= LoggerFactory.getLogger("stdoutLogger");
+
+	@Parameter(names = "-input", description = "Folder to get unprocssed files", required = true)
+	private String				inputFolder		= null;
+
+	@Parameter(names = "-output", description = "Folder to save processed files", required = true)
+	private String				outputFolder	= null;
 
 	public static void main(String[] args) throws Exception
 	{
@@ -21,17 +28,16 @@ public class PostProcessing
 
 		PostProcessing main = new PostProcessing();
 		new JCommander(main, args);
-		//main.postProcessFile(new File("C:/Users/Aleksander/Desktop/data/1.ocr.txt"), new File("C:/Users/Aleksander/Desktop/data/CH-1.ocr.txt"));
-		main.postProcessFolder(new File("C:/Users/Aleksander/Desktop/data/PH/"), new File("C:/Users/Aleksander/Desktop/data/Processed/PH/"));
+		main.postProcessFolder();
 	}
 
-	public void postProcessFolder(File inputFolder, File outputFolder) throws Exception
+	public void postProcessFolder() throws Exception
 	{
-		for (File file : inputFolder.listFiles())
+		for (File file : new File(inputFolder).listFiles())
 		{
 			if (StringUtils.contains(file.getName(), ".ocr.txt"))
 			{
-				String output = outputFolder.getAbsolutePath() + "/" + StringUtils.substringBefore(file.getName(), ".ocr") + ".processed.txt";
+				String output = outputFolder + "/" + StringUtils.substringBefore(file.getName(), ".ocr") + ".processed.txt";
 				postProcessFile(file, new File(output));
 				logger.info("Processed file {}", file.getName());
 			}
@@ -71,10 +77,10 @@ public class PostProcessing
 	private String removeNoneAlpha(String buffer)
 	{
 		buffer = buffer.replaceAll("[^a-zA-Z\\s]", " ");
-		
+
 		while (buffer.contains("  "))
 			buffer = buffer.replaceAll("  ", " ");
-		
+
 		return buffer;
 	}
 

@@ -41,6 +41,7 @@ public class Analyzer
 
 	}
 
+	@SuppressWarnings("unchecked")
 	public void analyzeSecurity(boolean keepExcised, File inputFolder, String outputFile) throws Exception
 	{
 		HashMap<Integer, Classification> classifications = new HashMap<>();
@@ -51,7 +52,6 @@ public class Analyzer
 			if (StringUtils.contains(file.getName(), ".meta.txt"))
 			{
 				Integer fileName = Integer.valueOf(StringUtils.substringBefore(file.getName(), "."));
-				Classification fileClass = null;
 
 				List<String> lines = IOUtils.readLines(new FileReader(file));
 
