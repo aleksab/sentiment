@@ -41,26 +41,24 @@ public class DictionaryCheck
 		{
 			String[] words = FileUtils.readFileToString(file).split(" ");
 
-			BigDecimal match = BigDecimal.ZERO;
-			BigDecimal unmatch = BigDecimal.ZERO;
+			float match = 0;
+			float unmatch = 0;
 
 			for (String word : words)
 			{
 				if (dicLines.contains(word))
-					match = match.add(BigDecimal.ONE);
+					match++;
 				else
 				{
-					unmatch = unmatch.add(BigDecimal.ONE);
+					unmatch++;
 					// logger.info("Unmatched: " + word);
 				}
 			}
 
-			match.setScale(5);
-			BigDecimal matchPercentage = match.multiply(new BigDecimal(100).divide(new BigDecimal(words.length), RoundingMode.HALF_EVEN));
-
 			// logger.info("Matched: " + match);
 			// logger.info("Unmatched: " + unmatch);
-			logger.info("Percentage for file {}: {}", file.getName(), matchPercentage);
+			float matchPercentage = (match / (float) words.length) * 100;
+			logger.info("Percentage for file {}: {} ({} / {})", file.getName(), matchPercentage, match, words.length);
 		}
 	}
 }
