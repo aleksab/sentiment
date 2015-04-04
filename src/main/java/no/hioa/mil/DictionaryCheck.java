@@ -56,6 +56,9 @@ public class DictionaryCheck
 	{
 		Set<String> dictionary = buildDictionary(new File(dictionaryFolder));
 
+		double totalMatch = 0;
+		double totalSize = 0;
+		
 		for (File file : new File(folder).listFiles())
 		{
 			String[] words = FileUtils.readFileToString(file).split(" ");
@@ -70,6 +73,13 @@ public class DictionaryCheck
 
 			float matchPercentage = (match / (float) words.length) * 100;
 			logger.info("Percentage for file {}: {} ({} / {})", file.getName(), matchPercentage, match, words.length);
+			
+			totalMatch += match;
+			totalSize += words.length;
 		}
+		
+		double totalMatchPercentage = (totalMatch / totalSize) * 100;
+		logger.info("Total percentage: {} ({} / {})", totalMatchPercentage, totalMatch, totalSize);
+		
 	}
 }
