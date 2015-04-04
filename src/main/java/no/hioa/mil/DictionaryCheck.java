@@ -1,6 +1,8 @@
 package no.hioa.mil;
 
 import java.io.File;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
@@ -15,8 +17,8 @@ public class DictionaryCheck
 {
 	private static final Logger	logger		= LoggerFactory.getLogger("stdoutLogger");
 
-	@Parameter(names = "-file", description = "File to check", required = true)
-	private String				file		= null;
+	@Parameter(names = "-folder", description = "Folder to check", required = true)
+	private String				folder		= null;
 
 	@Parameter(names = "-dic", description = "Dictionary to check against", required = true)
 	private String				dictionary	= null;
@@ -34,20 +36,31 @@ public class DictionaryCheck
 	public void checkDictionary() throws Exception
 	{
 		List<String> dicLines = FileUtils.readLines(new File(dictionary));
-		String[] words = FileUtils.readFileToString(new File(file)).split(" ");
 
-		int match = 0;
-		int unmatch = 0;
-
-		for (String word : words)
+		for (File file : new File(folder).listFiles())
 		{
-			if (dicLines.contains(word))
-				match++;
-			else
-				unmatch++;
-		}
+			String[] words = FileUtils.readFileToString(file).split(" ");
 
-		logger.info("Matched: " + match);
-		logger.info("Unmatched: " + unmatch);
+			BigDecimal match = BigDecimal.ZERO;
+			BigDecimal unmatch = BigDecimal.ZERO;
+
+			for (String word : words)
+			{
+				if (dicLines.contains(word))
+					match = match.add(BigDecimal.ONE);
+				else
+				{
+					unmatch = unmatch.add(BigDecimal.ONE);
+					// logger.info("Unmatched: " + word);
+				}
+			}
+
+			match.setScale(5);
+			BigDecimal matchPercentage = match.multiply(new BigDecimal(100).divide(new BigDecimal(words.length), RoundingMode.HALF_EVEN));
+
+			// logger.info("Matched: " + match);
+			// logger.info("Unmatched: " + unmatch);
+			logger.info("Percentage for file {}: {}", file.getName(), matchPercentage);
+		}
 	}
 }
