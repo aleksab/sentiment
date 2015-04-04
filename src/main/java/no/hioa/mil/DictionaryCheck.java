@@ -43,7 +43,9 @@ public class DictionaryCheck
 			{
 				logger.info("Adding {} to dictionary", file.getName());
 				List<String> lines = FileUtils.readLines(file);
-				dictionary.addAll(lines);
+
+				for (String line : lines)
+					dictionary.add(line.toLowerCase());
 			}
 		}
 

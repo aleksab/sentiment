@@ -18,7 +18,7 @@ public class AutoCorrect
 {
 	private static final Logger	logger				= LoggerFactory.getLogger("stdoutLogger");
 
-	@Parameter(names = "-filer", description = "File to autocorrect", required = true)
+	@Parameter(names = "-file", description = "File to autocorrect", required = true)
 	private String				file				= null;
 
 	@Parameter(names = "-dic", description = "Dictionary to check against", required = true)
@@ -70,7 +70,7 @@ public class AutoCorrect
 				{
 					if (dicWord.length() >= lowerLimit && dicWord.length() <= upperLimit)
 					{
-						if (StringUtils.getLevenshteinDistance(word.toLowerCase(), dicWord.toLowerCase()) == levensteinDistance)
+						if (StringUtils.getLevenshteinDistance(word, dicWord) == levensteinDistance)
 						{
 							logger.info("Levenstein distance is 1, changing from {} to {}", word, dicWord);
 							word = dicWord;
@@ -112,7 +112,9 @@ public class AutoCorrect
 			{
 				logger.info("Adding {} to dictionary", file.getName());
 				List<String> lines = FileUtils.readLines(file);
-				dictionary.addAll(lines);
+
+				for (String line : lines)
+					dictionary.add(line.toLowerCase());
 			}
 		}
 
