@@ -2,6 +2,8 @@ package no.hioa.mil;
 
 import java.io.File;
 import java.io.FileReader;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -32,12 +34,9 @@ public class Analyzer
 		// main.analyzeSecurity(false, new
 		// File("C:/Users/Aleksander/Desktop/milcom/PH"),"C:/Users/Aleksander/Desktop/data/classification/not-excised-ph.txt");
 
-		// main.analyzeSecurity(true, new
-		// File("C:/Users/Aleksander/Desktop/milcom/AF"),"C:/Users/Aleksander/Desktop/data/classification/excised-af.txt");
-		// main.analyzeSecurity(true, new
-		// File("C:/Users/Aleksander/Desktop/milcom/CH"),"C:/Users/Aleksander/Desktop/data/classification/excised-ch.txt");
-		// main.analyzeSecurity(true, new
-		// File("C:/Users/Aleksander/Desktop/milcom/PH"),"C:/Users/Aleksander/Desktop/data/classification/excised-ph.txt");	
+		main.analyzeSecurity(true, new File("E:/Data/milcom/AF"), "E:/Data/milcom/classification/excised-af.txt");
+		main.analyzeSecurity(true, new File("E:/Data/milcom/CH"), "E:/Data/milcom/classification/excised-ch.txt");
+		main.analyzeSecurity(true, new File("E:/Data/milcom/PH"), "E:/Data/milcom/classification/excised-ph.txt");
 	}
 
 	@SuppressWarnings("unchecked")
@@ -138,11 +137,14 @@ public class Analyzer
 
 		logger.info("Total: {}", classifications.size());
 
+		List<Integer> sortedKeys = new ArrayList<Integer>(classifications.keySet());
+		Collections.sort(sortedKeys);
+
 		String buffer = "";
-		for (Integer key : classifications.keySet())
+		for (Integer key : sortedKeys)
 		{
-			buffer += classifications.get(key) + ",";
-		}
+			buffer += key + ":" + classifications.get(key) + ",";
+		}			
 
 		buffer = StringUtils.substringBeforeLast(buffer, ",");
 		FileUtils.writeStringToFile(new File(outputFile), buffer.toString());
