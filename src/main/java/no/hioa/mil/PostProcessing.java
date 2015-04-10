@@ -16,10 +16,10 @@ public class PostProcessing
 {
 	private static final Logger	logger			= LoggerFactory.getLogger("stdoutLogger");
 
-	@Parameter(names = "-input", description = "Folder to get unprocssed files", required = true)
+	@Parameter(names = "-input", description = "Folder to get unprocssed files", required = false)
 	private String				inputFolder		= null;
 
-	@Parameter(names = "-output", description = "Folder to save processed files", required = true)
+	@Parameter(names = "-output", description = "Folder to save processed files", required = false)
 	private String				outputFolder	= null;
 
 	public static void main(String[] args) throws Exception
@@ -28,7 +28,8 @@ public class PostProcessing
 
 		PostProcessing main = new PostProcessing();
 		new JCommander(main, args);
-		main.postProcessFolder();
+		//main.postProcessFolder();
+		main.postProcessFile(new File("C:/Users/Aleksander/Desktop/milcom/AF/1.ocr.txt"), new File("C:/Users/Aleksander/Desktop/data/processed/1.processed.txt"));
 	}
 
 	public void postProcessFolder() throws Exception
