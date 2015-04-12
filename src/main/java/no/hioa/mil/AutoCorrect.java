@@ -27,9 +27,6 @@ public class AutoCorrect
 	@Parameter(names = "-dic", description = "Dictionary to check against", required = true)
 	private String				dictionaryFolder	= null;
 
-	@Parameter(names = "-d", description = "Levenstein distance", required = false)
-	private int					levensteinDistance	= 1;
-
 	public static void main(String[] args) throws Exception
 	{
 		PropertyConfigurator.configure("log4j.properties");
@@ -46,7 +43,7 @@ public class AutoCorrect
 		for (File file : new File(inputFolder).listFiles())
 		{
 			logger.info("Checking file {}", file.getName());
-			
+
 			File output = new File(outputFolder + "/" + file.getName());
 			autoCorrect(dictionary, file, output);
 
@@ -66,21 +63,23 @@ public class AutoCorrect
 
 		for (String word : words)
 		{
-			if (word.length() > 3 && !dictionary.contains(word))
+			if (word.length() >= 3 && !dictionary.contains(word))
 			{
-				int lowerLimit = word.length();
-				int upperLimit = word.length();
+				// first we try with first level
+				String correctedWord = getAutocorrectWord(dictionary, word.length(), word.length(), word, 1);
 
-				for (String dicWord : dictionary)
+				if (correctedWord != null)
+					word = correctedWord;
+				else if (word.length() >= 4)
 				{
-					if (dicWord.length() >= lowerLimit && dicWord.length() <= upperLimit)
+					correctedWord = getAutocorrectWord(dictionary, word.length(), word.length(), word, 2);
+					if (correctedWord != null)
+						word = correctedWord;
+					else if (word.length() >= 7)
 					{
-						if (StringUtils.getLevenshteinDistance(word, dicWord) == levensteinDistance)
-						{
-							//logger.info("Levenstein distance is 1, changing from {} to {}", word, dicWord);
-							word = dicWord;
-							break;
-						}
+						correctedWord = getAutocorrectWord(dictionary, word.length(), word.length(), word, 3);
+						if (correctedWord != null)
+							word = correctedWord;
 					}
 				}
 			}
@@ -89,6 +88,23 @@ public class AutoCorrect
 		}
 
 		FileUtils.writeStringToFile(output, buffer.toString());
+	}
+
+	private String getAutocorrectWord(Set<String> dictionary, int lowerLimit, int upperLimit, String word, int levensteinDistance)
+	{
+		for (String dicWord : dictionary)
+		{
+			if (dicWord.length() >= lowerLimit && dicWord.length() <= upperLimit)
+			{
+				if (StringUtils.getLevenshteinDistance(word, dicWord) == levensteinDistance)
+				{
+					// logger.info("Levenstein distance is 1, changing from {} to {}", word, dicWord);
+					return dicWord;
+				}
+			}
+		}
+
+		return null;
 	}
 
 	private MatchResult checkDicionaryFile(Set<String> dictionary, File file) throws Exception
